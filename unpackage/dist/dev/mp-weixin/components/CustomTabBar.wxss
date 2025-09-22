@@ -1,0 +1,46 @@
+/* 水平间距 */
+/* 水平间距 */
+.custom-tab-bar.data-v-6def6a3b {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #ffffff;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+.tab-bar-border.data-v-6def6a3b {
+  height: 1rpx;
+  background: #e5e5e5;
+}
+.tab-bar-content.data-v-6def6a3b {
+  display: flex;
+  height: 100rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-item.data-v-6def6a3b {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8rpx 0;
+  transition: all 0.2s ease;
+}
+.tab-item.active.data-v-6def6a3b {
+  transform: scale(1.05);
+}
+.tab-icon.data-v-6def6a3b {
+  margin-bottom: 4rpx;
+  transition: transform 0.2s ease;
+}
+.tab-item.active .tab-icon.data-v-6def6a3b {
+  transform: scale(1.1);
+}
+.tab-text.data-v-6def6a3b {
+  font-size: 20rpx;
+  transition: all 0.2s ease;
+}
+.tab-item.active .tab-text.data-v-6def6a3b {
+  font-weight: 600;
+}

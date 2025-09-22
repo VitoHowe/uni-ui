@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/study/study",
+    "pages/question/question",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "项目管理师学习",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#f8f9fa"
+  },
+  "usingComponents": {}
+}

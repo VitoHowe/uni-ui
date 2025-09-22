@@ -1,0 +1,114 @@
+/* 水平间距 */
+/* 水平间距 */
+.profile-container.data-v-dd383ca2 {
+  padding: 0 0 120rpx 0;
+  /* 底部留出导航栏空间 */
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+.user-card.data-v-dd383ca2 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 20rpx;
+  padding: 40rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  color: white;
+  box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.3);
+}
+.user-avatar.data-v-dd383ca2 {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  overflow: hidden;
+  margin-right: 30rpx;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.user-avatar image.data-v-dd383ca2 {
+  width: 100%;
+  height: 100%;
+}
+.user-info.data-v-dd383ca2 {
+  flex: 1;
+}
+.user-name.data-v-dd383ca2 {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+}
+.user-desc.data-v-dd383ca2 {
+  font-size: 26rpx;
+  opacity: 0.8;
+}
+.edit-btn.data-v-dd383ca2 {
+  padding: 20rpx;
+}
+.study-stats.data-v-dd383ca2 {
+  margin: 20rpx;
+}
+.stats-grid.data-v-dd383ca2 {
+  background: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+.stats-item.data-v-dd383ca2 {
+  text-align: center;
+}
+.stats-number.data-v-dd383ca2 {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+.stats-label.data-v-dd383ca2 {
+  font-size: 26rpx;
+  color: #666;
+}
+.menu-section.data-v-dd383ca2,
+.settings-section.data-v-dd383ca2 {
+  margin: 20rpx;
+  background: white;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+.menu-icon.data-v-dd383ca2 {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.setting-icon.data-v-dd383ca2 {
+  width: 60rpx;
+  height: 60rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.logout-section.data-v-dd383ca2 {
+  margin: 40rpx 20rpx 20rpx;
+}
+.logout-btn.data-v-dd383ca2 {
+  width: 100%;
+  height: 88rpx;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.logout-btn.data-v-dd383ca2:active {
+  background-color: #c82333;
+}
