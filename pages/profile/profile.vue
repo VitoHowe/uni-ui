@@ -1,13 +1,48 @@
 <template>
   <view class="profile-container">
+    <!-- 认证保护：未登录时显示登录引导 -->
+    <AuthGuard 
+      v-if="!authStore.isAuthenticated"
+      title="个人中心"
+      message="登录后可查看学习统计、管理个人资料和使用完整功能"
+      :show-preview="true"
+      current-path="/pages/profile/profile"
+    >
+      <template #preview>
+        <view class="preview-item">
+          <uni-icons type="checkmarkempty" size="16" color="#28a745" />
+          <text>学习进度统计</text>
+        </view>
+        <view class="preview-item">
+          <uni-icons type="checkmarkempty" size="16" color="#28a745" />
+          <text>个人资料管理</text>
+        </view>
+        <view class="preview-item">
+          <uni-icons type="checkmarkempty" size="16" color="#28a745" />
+          <text>学习计划制定</text>
+        </view>
+      </template>
+    </AuthGuard>
+
+    <!-- 已登录内容 -->
+    <template v-else>
     <!-- 用户信息卡片 -->
     <view class="user-card">
       <view class="user-avatar">
-        <image src="/static/avatar.png" mode="aspectFill" @error="onAvatarError" />
+        <image 
+          :src="authStore.userAvatar" 
+          mode="aspectFill" 
+          @error="onAvatarError" 
+        />
       </view>
       <view class="user-info">
-        <text class="user-name">学习者</text>
-        <text class="user-desc">正在备考高级信息系统项目管理师</text>
+        <text class="user-name">{{ authStore.userNickname }}</text>
+        <text class="user-desc">
+          {{ authStore.isAuthenticated ? 
+            `${authStore.userRoleText} · 正在备考高级信息系统项目管理师` : 
+            '请登录后查看完整功能' 
+          }}
+        </text>
       </view>
       <view class="edit-btn" @click="editProfile">
         <uni-icons type="compose" size="18" color="#007AFF" />
@@ -75,17 +110,30 @@
 
     <!-- 退出登录按钮 -->
     <view class="logout-section">
-      <button class="logout-btn" @click="handleLogout">退出登录</button>
+      <button 
+        class="logout-btn" 
+        :class="{ 'login-btn': !authStore.isAuthenticated }"
+        @click="handleLogout"
+      >
+        {{ authStore.isAuthenticated ? '退出登录' : '立即登录' }}
+      </button>
     </view>
 
     <!-- 自定义底部导航栏 -->
     <CustomTabBar :current="3" @change="onTabChange" />
+    </template>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth.js'
+import { PermissionChecker } from '@/utils/auth.js'
 import CustomTabBar from "@/components/CustomTabBar.vue"
+import AuthGuard from "@/components/AuthGuard.vue"
+
+// 认证store
+const authStore = useAuthStore()
 
 // 学习统计数据
 const studyStats = reactive([
@@ -124,6 +172,13 @@ const menuItems = reactive([
     color: '#6f42c1',
     rightText: '',
     action: 'studyReport'
+  },
+  {
+    title: '文件管理',
+    icon: 'cloud-upload',
+    color: '#17a2b8',
+    rightText: '',
+    action: 'fileManagement'
   }
 ])
 
@@ -190,6 +245,9 @@ const handleMenuClick = (menu) => {
     case 'studyReport':
       uni.showToast({ title: '学习报告', icon: 'none' })
       break
+    case 'fileManagement':
+      uni.navigateTo({ url: '/pages/upload/upload' })
+      break
     default:
       break
   }
@@ -236,16 +294,28 @@ const handleClearCache = () => {
 
 // 退出登录
 const handleLogout = () => {
+  if (!authStore.isAuthenticated) {
+    // 未登录状态，跳转到登录页
+    uni.navigateTo({
+      url: '/pages/login/login'
+    })
+    return
+  }
+  
   uni.showModal({
     title: '确认退出',
-    content: '确定要退出登录吗？',
-    success: (res) => {
+    content: '确定要退出登录吗？退出后部分功能将无法使用。',
+    success: async (res) => {
       if (res.confirm) {
-        uni.showToast({
-          title: '已退出登录',
-          icon: 'success'
-        })
-        // 这里可以跳转到登录页面
+        try {
+          await authStore.logout()
+        } catch (error) {
+          console.error('退出登录失败:', error)
+          uni.showToast({
+            title: '退出失败，请重试',
+            icon: 'error'
+          })
+        }
       }
     }
   })
@@ -386,5 +456,26 @@ const onTabChange = (index) => {
 
 .logout-btn:active {
   background-color: #c82333;
+}
+
+.login-btn {
+  background-color: #007AFF !important;
+  
+  &:active {
+    background-color: #0056CC !important;
+  }
+}
+
+// AuthGuard预览项目样式
+.preview-item {
+  display: flex;
+  align-items: center;
+  padding: 15rpx 0;
+  font-size: 26rpx;
+  color: #666;
+  
+  uni-icons {
+    margin-right: 15rpx;
+  }
 }
 </style> 

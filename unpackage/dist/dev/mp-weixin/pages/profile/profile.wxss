@@ -112,3 +112,19 @@
 .logout-btn.data-v-dd383ca2:active {
   background-color: #c82333;
 }
+.login-btn.data-v-dd383ca2 {
+  background-color: #007AFF !important;
+}
+.login-btn.data-v-dd383ca2:active {
+  background-color: #0056CC !important;
+}
+.preview-item.data-v-dd383ca2 {
+  display: flex;
+  align-items: center;
+  padding: 15rpx 0;
+  font-size: 26rpx;
+  color: #666;
+}
+.preview-item uni-icons.data-v-dd383ca2 {
+  margin-right: 15rpx;
+}

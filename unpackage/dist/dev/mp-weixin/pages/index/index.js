@@ -1,6 +1,5 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
-const stores_counter = require("../../stores/counter.js");
 if (!Array) {
   const _component_uni_progress = common_vendor.resolveComponent("uni-progress");
   const _easycom_uni_section2 = common_vendor.resolveComponent("uni-section");
@@ -20,7 +19,6 @@ const CustomTabBar = () => "../../components/CustomTabBar.js";
 const _sfc_main = {
   __name: "index",
   setup(__props) {
-    stores_counter.useCounterStore();
     const examCountdown = common_vendor.reactive({
       days: 158
       // 这里可以根据实际考试日期计算
@@ -102,7 +100,7 @@ const _sfc_main = {
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/index/index.vue:224", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:221", "切换到tab:", index);
     };
     common_vendor.onMounted(() => {
     });

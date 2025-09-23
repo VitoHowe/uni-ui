@@ -1,6 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
-const common_assets = require("../../common/assets.js");
+const stores_auth = require("../../stores/auth.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
   const _easycom_uni_section2 = common_vendor.resolveComponent("uni-section");
@@ -13,12 +13,14 @@ const _easycom_uni_section = () => "../../uni_modules/uni-section/components/uni
 const _easycom_uni_list_item = () => "../../uni_modules/uni-list/components/uni-list-item/uni-list-item.js";
 const _easycom_uni_list = () => "../../uni_modules/uni-list/components/uni-list/uni-list.js";
 if (!Math) {
-  (_easycom_uni_icons + _easycom_uni_section + _easycom_uni_list_item + _easycom_uni_list + CustomTabBar)();
+  (_easycom_uni_icons + AuthGuard + _easycom_uni_section + _easycom_uni_list_item + _easycom_uni_list + CustomTabBar)();
 }
 const CustomTabBar = () => "../../components/CustomTabBar.js";
+const AuthGuard = () => "../../components/AuthGuard.js";
 const _sfc_main = {
   __name: "profile",
   setup(__props) {
+    const authStore = stores_auth.useAuthStore();
     const studyStats = common_vendor.reactive([
       { label: "学习天数", value: "45", color: "#007AFF" },
       { label: "完成章节", value: "18", color: "#28a745" },
@@ -53,6 +55,13 @@ const _sfc_main = {
         color: "#6f42c1",
         rightText: "",
         action: "studyReport"
+      },
+      {
+        title: "文件管理",
+        icon: "cloud-upload",
+        color: "#17a2b8",
+        rightText: "",
+        action: "fileManagement"
       }
     ]);
     const settingItems = common_vendor.reactive([
@@ -88,7 +97,7 @@ const _sfc_main = {
       }
     ]);
     const onAvatarError = () => {
-      common_vendor.index.__f__("log", "at pages/profile/profile.vue:167", "头像加载失败");
+      common_vendor.index.__f__("log", "at pages/profile/profile.vue:222", "头像加载失败");
     };
     const editProfile = () => {
       common_vendor.index.showToast({
@@ -109,6 +118,9 @@ const _sfc_main = {
           break;
         case "studyReport":
           common_vendor.index.showToast({ title: "学习报告", icon: "none" });
+          break;
+        case "fileManagement":
+          common_vendor.index.navigateTo({ url: "/pages/upload/upload" });
           break;
       }
     };
@@ -146,33 +158,70 @@ const _sfc_main = {
       });
     };
     const handleLogout = () => {
+      if (!authStore.isAuthenticated) {
+        common_vendor.index.navigateTo({
+          url: "/pages/login/login"
+        });
+        return;
+      }
       common_vendor.index.showModal({
         title: "确认退出",
-        content: "确定要退出登录吗？",
-        success: (res) => {
+        content: "确定要退出登录吗？退出后部分功能将无法使用。",
+        success: async (res) => {
           if (res.confirm) {
-            common_vendor.index.showToast({
-              title: "已退出登录",
-              icon: "success"
-            });
+            try {
+              await authStore.logout();
+            } catch (error) {
+              common_vendor.index.__f__("error", "at pages/profile/profile.vue:313", "退出登录失败:", error);
+              common_vendor.index.showToast({
+                title: "退出失败，请重试",
+                icon: "error"
+              });
+            }
           }
         }
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/profile/profile.vue:256", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/profile/profile.vue:326", "切换到tab:", index);
     };
     return (_ctx, _cache) => {
-      return {
-        a: common_assets._imports_0,
-        b: common_vendor.o(onAvatarError),
+      return common_vendor.e({
+        a: !common_vendor.unref(authStore).isAuthenticated
+      }, !common_vendor.unref(authStore).isAuthenticated ? {
+        b: common_vendor.p({
+          type: "checkmarkempty",
+          size: "16",
+          color: "#28a745"
+        }),
         c: common_vendor.p({
+          type: "checkmarkempty",
+          size: "16",
+          color: "#28a745"
+        }),
+        d: common_vendor.p({
+          type: "checkmarkempty",
+          size: "16",
+          color: "#28a745"
+        }),
+        e: common_vendor.p({
+          title: "个人中心",
+          message: "登录后可查看学习统计、管理个人资料和使用完整功能",
+          ["show-preview"]: true,
+          ["current-path"]: "/pages/profile/profile"
+        })
+      } : {
+        f: common_vendor.unref(authStore).userAvatar,
+        g: common_vendor.o(onAvatarError),
+        h: common_vendor.t(common_vendor.unref(authStore).userNickname),
+        i: common_vendor.t(common_vendor.unref(authStore).isAuthenticated ? `${common_vendor.unref(authStore).userRoleText} · 正在备考高级信息系统项目管理师` : "请登录后查看完整功能"),
+        j: common_vendor.p({
           type: "compose",
           size: "18",
           color: "#007AFF"
         }),
-        d: common_vendor.o(editProfile),
-        e: common_vendor.f(studyStats, (stat, index, i0) => {
+        k: common_vendor.o(editProfile),
+        l: common_vendor.f(studyStats, (stat, index, i0) => {
           return {
             a: common_vendor.t(stat.value),
             b: stat.color,
@@ -180,14 +229,14 @@ const _sfc_main = {
             d: index
           };
         }),
-        f: common_vendor.p({
+        m: common_vendor.p({
           title: "学习统计",
           type: "line",
           padding: true
         }),
-        g: common_vendor.f(menuItems, (menu, index, i0) => {
+        n: common_vendor.f(menuItems, (menu, index, i0) => {
           return {
-            a: "dd383ca2-5-" + i0 + "," + ("dd383ca2-4-" + i0),
+            a: "dd383ca2-9-" + i0 + "," + ("dd383ca2-8-" + i0),
             b: common_vendor.p({
               type: menu.icon,
               size: "20",
@@ -196,7 +245,7 @@ const _sfc_main = {
             c: menu.color,
             d: index,
             e: common_vendor.o(($event) => handleMenuClick(menu), index),
-            f: "dd383ca2-4-" + i0 + ",dd383ca2-3",
+            f: "dd383ca2-8-" + i0 + ",dd383ca2-7",
             g: common_vendor.p({
               title: menu.title,
               rightText: menu.rightText,
@@ -204,23 +253,23 @@ const _sfc_main = {
             })
           };
         }),
-        h: common_vendor.p({
+        o: common_vendor.p({
           title: "功能菜单",
           type: "line",
           padding: true
         }),
-        i: common_vendor.f(settingItems, (setting, index, i0) => {
+        p: common_vendor.f(settingItems, (setting, index, i0) => {
           return {
-            a: "dd383ca2-9-" + i0 + "," + ("dd383ca2-8-" + i0),
+            a: "dd383ca2-13-" + i0 + "," + ("dd383ca2-12-" + i0),
             b: common_vendor.p({
               type: setting.icon,
               size: "20",
               color: "#666"
             }),
-            c: "dd383ca2-10-" + i0 + "," + ("dd383ca2-8-" + i0),
+            c: "dd383ca2-14-" + i0 + "," + ("dd383ca2-12-" + i0),
             d: index,
             e: common_vendor.o(($event) => handleSettingClick(setting), index),
-            f: "dd383ca2-8-" + i0 + ",dd383ca2-7",
+            f: "dd383ca2-12-" + i0 + ",dd383ca2-11",
             g: common_vendor.p({
               title: setting.title,
               note: setting.note,
@@ -228,22 +277,24 @@ const _sfc_main = {
             })
           };
         }),
-        j: common_vendor.p({
+        q: common_vendor.p({
           type: "arrowright",
           size: "16",
           color: "#ccc"
         }),
-        k: common_vendor.p({
+        r: common_vendor.p({
           title: "设置",
           type: "line",
           padding: true
         }),
-        l: common_vendor.o(handleLogout),
-        m: common_vendor.o(onTabChange),
-        n: common_vendor.p({
+        s: common_vendor.t(common_vendor.unref(authStore).isAuthenticated ? "退出登录" : "立即登录"),
+        t: !common_vendor.unref(authStore).isAuthenticated ? 1 : "",
+        v: common_vendor.o(handleLogout),
+        w: common_vendor.o(onTabChange),
+        x: common_vendor.p({
           current: 3
         })
-      };
+      });
     };
   }
 };

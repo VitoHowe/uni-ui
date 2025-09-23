@@ -106,10 +106,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useCounterStore } from "@/stores/counter"
 import CustomTabBar from "@/components/CustomTabBar.vue"
-
-const counter = useCounterStore()
 
 // 考试倒计时
 const examCountdown = reactive({
