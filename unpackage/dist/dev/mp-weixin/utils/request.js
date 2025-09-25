@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const common_vendor = require("../common/vendor.js");
 const utils_constants = require("./constants.js");
 const utils_auth = require("./auth.js");
@@ -130,6 +129,7 @@ class RequestManager {
     try {
       const fullUrl = this.buildFullUrl(url);
       const header = await this.buildHeaders({}, needAuth);
+      common_vendor.index.__f__("log", "at utils/request.js:159", fullUrl, filePath, formData, "header", header);
       return new Promise((resolve, reject) => {
         const uploadTask = common_vendor.index.uploadFile({
           url: fullUrl,
@@ -155,7 +155,7 @@ class RequestManager {
         });
         if (showProgress) {
           uploadTask.onProgressUpdate((res) => {
-            common_vendor.index.__f__("log", "at utils/request.js:187", "上传进度:", res.progress + "%");
+            common_vendor.index.__f__("log", "at utils/request.js:188", "上传进度:", res.progress + "%");
           });
         }
       });
@@ -236,7 +236,7 @@ class RequestManager {
    */
   async handleResponse(response) {
     const { statusCode, data } = response;
-    common_vendor.index.__f__("log", "at utils/request.js:279", "📡 API响应:", { statusCode, data });
+    common_vendor.index.__f__("log", "at utils/request.js:280", "📡 API响应:", { statusCode, data });
     if (statusCode !== utils_constants.HTTP_STATUS.OK) {
       throw this.createHttpError(statusCode, data);
     }
@@ -257,9 +257,9 @@ class RequestManager {
    * @returns {Promise<any>} 处理结果
    */
   async handleError(error, originalOptions, retryCount) {
-    common_vendor.index.__f__("error", "at utils/request.js:306", "❌ 请求失败:", error);
+    common_vendor.index.__f__("error", "at utils/request.js:307", "❌ 请求失败:", error);
     if (this.isNetworkError(error) && retryCount < utils_constants.API_CONFIG.MAX_RETRY_COUNT) {
-      common_vendor.index.__f__("log", "at utils/request.js:310", `🔄 网络错误，准备重试 (${retryCount + 1}/${utils_constants.API_CONFIG.MAX_RETRY_COUNT})`);
+      common_vendor.index.__f__("log", "at utils/request.js:311", `🔄 网络错误，准备重试 (${retryCount + 1}/${utils_constants.API_CONFIG.MAX_RETRY_COUNT})`);
       await this.delay(1e3 * (retryCount + 1));
       return this.request({ ...originalOptions, retryCount: retryCount + 1 });
     }
@@ -304,7 +304,7 @@ class RequestManager {
       throw new Error("没有刷新令牌");
     }
     try {
-      common_vendor.index.__f__("log", "at utils/request.js:364", "🔄 开始刷新Token");
+      common_vendor.index.__f__("log", "at utils/request.js:365", "🔄 开始刷新Token");
       const response = await this.performRequest({
         url: this.buildFullUrl(utils_constants.API_ENDPOINTS.AUTH.REFRESH),
         method: "POST",
@@ -313,9 +313,9 @@ class RequestManager {
       });
       const data = await this.handleResponse(response);
       utils_auth.TokenManager.setTokens(data);
-      common_vendor.index.__f__("log", "at utils/request.js:376", "✅ Token刷新成功");
+      common_vendor.index.__f__("log", "at utils/request.js:377", "✅ Token刷新成功");
     } catch (error) {
-      common_vendor.index.__f__("error", "at utils/request.js:378", "❌ Token刷新失败:", error);
+      common_vendor.index.__f__("error", "at utils/request.js:379", "❌ Token刷新失败:", error);
       throw error;
     }
   }
@@ -331,7 +331,7 @@ class RequestManager {
    * @returns {Promise<void>}
    */
   async handleAuthError() {
-    common_vendor.index.__f__("log", "at utils/request.js:396", "🔐 认证失败，清除登录状态");
+    common_vendor.index.__f__("log", "at utils/request.js:397", "🔐 认证失败，清除登录状态");
     utils_auth.LoginStateManager.logout();
     common_vendor.index.reLaunch({
       url: "/pages/login/login"
@@ -428,8 +428,6 @@ class RequestManager {
 }
 const request = new RequestManager();
 const upload = (url, filePath, formData, options) => request.upload(url, filePath, formData, options);
-exports.RequestManager = RequestManager;
-exports.default = request;
 exports.request = request;
 exports.upload = upload;
 //# sourceMappingURL=../../.sourcemap/mp-weixin/utils/request.js.map

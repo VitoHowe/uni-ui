@@ -35,8 +35,8 @@ export class NavigationGuard {
       return true
     }
     
-    // 其他页面默认允许访问
-    console.log('✅ 其他页面，默认允许访问')
+    // 公开页面允许访问（现在 isProtectedRoute 已经涵盖了所有非公开页面）
+    console.log('✅ 公开页面，允许访问')
     return true
   }
   

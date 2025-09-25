@@ -98,10 +98,21 @@ const useAuthStore = common_vendor.defineStore("auth", {
             common_vendor.index.__f__("log", "at stores/auth.js:116", "✅ 登录状态已恢复", userInfo);
           }
         } else {
-          this.logout(false);
+          this.clearAuthData();
+          const pages = getCurrentPages();
+          if (pages.length > 0) {
+            const currentPage = pages[pages.length - 1];
+            const currentPath = `/${currentPage.route}`;
+            if (currentPath !== "/pages/login/login") {
+              common_vendor.index.__f__("log", "at stores/auth.js:130", "🚪 用户未登录，跳转到登录页面");
+              common_vendor.index.reLaunch({
+                url: "/pages/login/login"
+              });
+            }
+          }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:123", "❌ 初始化认证状态失败:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:138", "❌ 初始化认证状态失败:", error);
         this.logout(false);
       }
     },
@@ -117,12 +128,12 @@ const useAuthStore = common_vendor.defineStore("auth", {
       }
       try {
         this.loading.login = true;
-        common_vendor.index.__f__("log", "at stores/auth.js:141", "🔐 开始微信登录", { requireUserInfo, isRetry });
+        common_vendor.index.__f__("log", "at stores/auth.js:156", "🔐 开始微信登录", { requireUserInfo, isRetry });
         if (!utils_auth.WechatAuth.isWechatLoginSupported()) {
           throw new Error("当前环境不支持微信登录");
         }
         const code = await utils_auth.WechatAuth.getWechatCode(isRetry);
-        common_vendor.index.__f__("log", "at stores/auth.js:151", "📝 准备登录数据", {
+        common_vendor.index.__f__("log", "at stores/auth.js:166", "📝 准备登录数据", {
           codePrefix: code.substring(0, 8) + "...",
           requireUserInfo,
           timestamp: (/* @__PURE__ */ new Date()).toLocaleTimeString()
@@ -136,9 +147,9 @@ const useAuthStore = common_vendor.defineStore("auth", {
               iv: userProfile.iv,
               signature: userProfile.signature
             });
-            common_vendor.index.__f__("log", "at stores/auth.js:169", "👤 已获取用户信息，准备完整登录");
+            common_vendor.index.__f__("log", "at stores/auth.js:184", "👤 已获取用户信息，准备完整登录");
           } catch (profileError) {
-            common_vendor.index.__f__("warn", "at stores/auth.js:171", "⚠️ 用户取消授权，仅进行基础登录");
+            common_vendor.index.__f__("warn", "at stores/auth.js:186", "⚠️ 用户取消授权，仅进行基础登录");
           }
         }
         const response = await utils_request.request.post(utils_constants.API_ENDPOINTS.AUTH.LOGIN, loginData, {
@@ -146,15 +157,15 @@ const useAuthStore = common_vendor.defineStore("auth", {
           showLoading: false
         });
         this.saveAuthData(response);
-        common_vendor.index.__f__("log", "at stores/auth.js:184", "✅ 微信登录成功");
+        common_vendor.index.__f__("log", "at stores/auth.js:199", "✅ 微信登录成功");
         return true;
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:188", "❌ 微信登录失败:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:203", "❌ 微信登录失败:", error);
         utils_auth.WechatAuth.clearCodeCache();
         if (this.isCodeRelatedError(error)) {
-          common_vendor.index.__f__("log", "at stores/auth.js:195", "🔄 检测到code相关错误，准备重试");
+          common_vendor.index.__f__("log", "at stores/auth.js:210", "🔄 检测到code相关错误，准备重试");
           if (!isRetry) {
-            common_vendor.index.__f__("log", "at stores/auth.js:199", "🔄 自动重试登录（使用新code）");
+            common_vendor.index.__f__("log", "at stores/auth.js:214", "🔄 自动重试登录（使用新code）");
             await this.delay(1e3);
             return await this.loginWithWechat(requireUserInfo, true);
           }
@@ -196,7 +207,7 @@ const useAuthStore = common_vendor.defineStore("auth", {
       }
       try {
         this.loading.refresh = true;
-        common_vendor.index.__f__("log", "at stores/auth.js:249", "🔄 刷新Token");
+        common_vendor.index.__f__("log", "at stores/auth.js:264", "🔄 刷新Token");
         const response = await utils_request.request.post(utils_constants.API_ENDPOINTS.AUTH.REFRESH, {
           refreshToken
         }, {
@@ -205,9 +216,9 @@ const useAuthStore = common_vendor.defineStore("auth", {
         });
         utils_auth.TokenManager.setTokens(response);
         this.updateTokenInfo();
-        common_vendor.index.__f__("log", "at stores/auth.js:262", "✅ Token刷新成功");
+        common_vendor.index.__f__("log", "at stores/auth.js:277", "✅ Token刷新成功");
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:265", "❌ Token刷新失败:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:280", "❌ Token刷新失败:", error);
         this.logout(false);
         throw error;
       } finally {
@@ -224,13 +235,13 @@ const useAuthStore = common_vendor.defineStore("auth", {
       }
       try {
         this.loading.profile = true;
-        common_vendor.index.__f__("log", "at stores/auth.js:285", "👤 获取用户资料");
+        common_vendor.index.__f__("log", "at stores/auth.js:300", "👤 获取用户资料");
         const userInfo = await utils_request.request.get(utils_constants.API_ENDPOINTS.AUTH.PROFILE);
         this.user = userInfo;
         utils_auth.UserManager.setUserInfo(userInfo);
-        common_vendor.index.__f__("log", "at stores/auth.js:293", "✅ 用户资料获取成功");
+        common_vendor.index.__f__("log", "at stores/auth.js:308", "✅ 用户资料获取成功");
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:296", "❌ 获取用户资料失败:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:311", "❌ 获取用户资料失败:", error);
         throw error;
       } finally {
         this.loading.profile = false;
@@ -246,17 +257,17 @@ const useAuthStore = common_vendor.defineStore("auth", {
         throw new Error("用户未登录");
       }
       try {
-        common_vendor.index.__f__("log", "at stores/auth.js:314", "📝 更新用户资料", updateData);
+        common_vendor.index.__f__("log", "at stores/auth.js:329", "📝 更新用户资料", updateData);
         const updatedUser = await utils_request.request.put(utils_constants.API_ENDPOINTS.AUTH.PROFILE, updateData);
         this.user = updatedUser;
         utils_auth.UserManager.setUserInfo(updatedUser);
-        common_vendor.index.__f__("log", "at stores/auth.js:322", "✅ 用户资料更新成功");
+        common_vendor.index.__f__("log", "at stores/auth.js:337", "✅ 用户资料更新成功");
         common_vendor.index.showToast({
           title: "资料更新成功",
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:330", "❌ 更新用户资料失败:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:345", "❌ 更新用户资料失败:", error);
         common_vendor.index.showToast({
           title: error.message || "更新失败",
           icon: "error"
@@ -271,24 +282,24 @@ const useAuthStore = common_vendor.defineStore("auth", {
      */
     async logout(callApi = true) {
       try {
-        common_vendor.index.__f__("log", "at stores/auth.js:346", "🚪 用户退出登录");
+        common_vendor.index.__f__("log", "at stores/auth.js:361", "🚪 用户退出登录");
         if (callApi && this.isAuthenticated) {
           try {
             await utils_request.request.post(utils_constants.API_ENDPOINTS.AUTH.LOGOUT);
           } catch (apiError) {
-            common_vendor.index.__f__("warn", "at stores/auth.js:353", "⚠️ 调用登出API失败，继续本地登出", apiError);
+            common_vendor.index.__f__("warn", "at stores/auth.js:368", "⚠️ 调用登出API失败，继续本地登出", apiError);
           }
         }
         this.clearAuthData();
         common_vendor.index.reLaunch({
-          url: "/pages/index/index"
+          url: "/pages/login/login"
         });
         common_vendor.index.showToast({
           title: "已退出登录",
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/auth.js:371", "❌ 退出登录过程出错:", error);
+        common_vendor.index.__f__("error", "at stores/auth.js:386", "❌ 退出登录过程出错:", error);
       }
     },
     /**
@@ -329,7 +340,7 @@ const useAuthStore = common_vendor.defineStore("auth", {
       this.isLoggedIn = true;
       this.user = user;
       this.updateTokenInfo();
-      common_vendor.index.__f__("log", "at stores/auth.js:426", "💾 认证数据已保存");
+      common_vendor.index.__f__("log", "at stores/auth.js:441", "💾 认证数据已保存");
     },
     /**
      * 清除认证数据
@@ -344,7 +355,7 @@ const useAuthStore = common_vendor.defineStore("auth", {
         hasToken: false,
         expiresAt: null
       };
-      common_vendor.index.__f__("log", "at stores/auth.js:450", "🗑️ 认证数据已清除");
+      common_vendor.index.__f__("log", "at stores/auth.js:465", "🗑️ 认证数据已清除");
     },
     /**
      * 更新Token信息（用于UI显示）
@@ -366,7 +377,7 @@ const useAuthStore = common_vendor.defineStore("auth", {
       try {
         await this.getUserProfile();
       } catch (error) {
-        common_vendor.index.__f__("warn", "at stores/auth.js:475", "⚠️ 强制刷新用户信息失败:", error);
+        common_vendor.index.__f__("warn", "at stores/auth.js:490", "⚠️ 强制刷新用户信息失败:", error);
       }
     }
   }

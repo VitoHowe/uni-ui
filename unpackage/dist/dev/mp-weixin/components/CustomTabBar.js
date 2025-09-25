@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../common/vendor.js");
+const utils_auth = require("../utils/auth.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
   _easycom_uni_icons2();
@@ -48,13 +49,41 @@ const _sfc_main = {
     const switchTab = (tab, index) => {
       if (currentIndex.value === index)
         return;
+      if (utils_auth.RouteGuard.isProtectedRoute(tab.pagePath)) {
+        const isLoggedIn = utils_auth.LoginStateManager.getLoginState();
+        if (!isLoggedIn) {
+          common_vendor.index.__f__("log", "at components/CustomTabBar.vue:83", "❌ Tab切换需要登录权限:", tab.pagePath);
+          utils_auth.RouteGuard.saveReturnPath(tab.pagePath);
+          common_vendor.index.showModal({
+            title: "需要登录",
+            content: "访问此页面需要登录，是否立即登录？",
+            confirmText: "立即登录",
+            cancelText: "稍后再说",
+            success: (res) => {
+              if (res.confirm) {
+                common_vendor.index.navigateTo({
+                  url: "/pages/login/login"
+                });
+              }
+            }
+          });
+          return;
+        }
+      }
       currentIndex.value = index;
       emit("change", index);
       common_vendor.index.switchTab({
         url: tab.pagePath,
         fail: () => {
           common_vendor.index.redirectTo({
-            url: tab.pagePath
+            url: tab.pagePath,
+            fail: () => {
+              common_vendor.index.__f__("error", "at components/CustomTabBar.vue:123", "❌ 页面跳转失败，恢复tab状态");
+              common_vendor.index.showToast({
+                title: "页面跳转失败",
+                icon: "error"
+              });
+            }
           });
         }
       });

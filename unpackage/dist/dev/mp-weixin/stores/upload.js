@@ -1,5 +1,7 @@
 "use strict";
 const common_vendor = require("../common/vendor.js");
+const utils_request = require("../utils/request.js");
+const utils_constants = require("../utils/constants.js");
 const useUploadStore = common_vendor.defineStore("upload", {
   state: () => ({
     // 当前文件类型 (0: 知识点, 1: 题库)
@@ -169,7 +171,7 @@ const useUploadStore = common_vendor.defineStore("upload", {
         await this.processUpload();
         common_vendor.index.showToast({ title: "上传完成", icon: "success" });
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/upload.js:203", "上传过程出错:", error);
+        common_vendor.index.__f__("error", "at stores/upload.js:205", "上传过程出错:", error);
         common_vendor.index.showToast({ title: "上传过程出错", icon: "error" });
       } finally {
         this.uploadStatus.uploading = false;
@@ -209,24 +211,27 @@ const useUploadStore = common_vendor.defineStore("upload", {
     // 上传单个文件 (调用真实API)
     async uploadSingleFile(file) {
       try {
-        const { upload } = await "../utils/request.js";
-        const { API_ENDPOINTS } = await "../utils/constants.js";
+        common_vendor.index.__f__("log", "at stores/upload.js:252", "📤 开始上传文件:", file.name);
+        common_vendor.index.__f__("log", "at stores/upload.js:253", "🔗 上传API端点:", utils_constants.API_ENDPOINTS.FILES.UPLOAD);
         const formData = {
           name: file.name,
-          description: `${this.currentFileTypeText}文件`
+          description: `${this.currentFileTypeText}文件`,
+          type: this.currentFileType
         };
-        const result = await upload(
-          API_ENDPOINTS.FILES.UPLOAD,
+        common_vendor.index.__f__("log", "at stores/upload.js:262", "📋 表单数据:", formData);
+        const result = await utils_request.upload(
+          utils_constants.API_ENDPOINTS.FILES.UPLOAD,
           file.path || file.url,
           formData
         );
+        common_vendor.index.__f__("log", "at stores/upload.js:271", "✅ 文件上传成功:", result);
         return {
           success: true,
           recordCount: result.parsed_questions || 0,
           fileId: result.id
         };
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/upload.js:273", "文件上传失败:", error);
+        common_vendor.index.__f__("error", "at stores/upload.js:279", "❌ 文件上传失败:", error);
         throw new Error(error.message || "文件上传失败");
       }
     },

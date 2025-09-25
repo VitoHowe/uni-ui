@@ -117,7 +117,22 @@ export const useAuthStore = defineStore('auth', {
           }
         } else {
           // 清除不完整的状态
-          this.logout(false)
+          this.clearAuthData()
+          
+          // 检查当前页面是否为登录页面，如果不是，则跳转到登录页面
+          const pages = getCurrentPages()
+          if (pages.length > 0) {
+            const currentPage = pages[pages.length - 1]
+            const currentPath = `/${currentPage.route}`
+            
+            // 如果当前不在登录页面，跳转到登录页面
+            if (currentPath !== '/pages/login/login') {
+              console.log('🚪 用户未登录，跳转到登录页面')
+              uni.reLaunch({
+                url: '/pages/login/login'
+              })
+            }
+          }
         }
       } catch (error) {
         console.error('❌ 初始化认证状态失败:', error)
@@ -357,9 +372,9 @@ export const useAuthStore = defineStore('auth', {
         // 清除所有认证相关数据
         this.clearAuthData()
         
-        // 跳转到首页
+        // 跳转到登录页面（因为现在所有页面都需要登录）
         uni.reLaunch({
-          url: '/pages/index/index'
+          url: '/pages/login/login'
         })
         
         uni.showToast({

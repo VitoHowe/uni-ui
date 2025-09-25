@@ -156,6 +156,7 @@ export class RequestManager {
       
       // 构建请求头
       const header = await this.buildHeaders({}, needAuth)
+      console.log(fullUrl,filePath,formData,'header', header)
       
       return new Promise((resolve, reject) => {
         const uploadTask = uni.uploadFile({

@@ -24,7 +24,7 @@ class NavigationGuard {
       common_vendor.index.__f__("log", "at utils/navigationGuard.js:34", "✅ 已登录，允许访问受保护页面");
       return true;
     }
-    common_vendor.index.__f__("log", "at utils/navigationGuard.js:39", "✅ 其他页面，默认允许访问");
+    common_vendor.index.__f__("log", "at utils/navigationGuard.js:39", "✅ 公开页面，允许访问");
     return true;
   }
   /**

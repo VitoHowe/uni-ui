@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { upload } from '@/utils/request.js'
+import { API_ENDPOINTS } from '@/utils/constants.js'
 
 export const useUploadStore = defineStore('upload', {
   state: () => ({
@@ -244,36 +246,40 @@ export const useUploadStore = defineStore('upload', {
       this.clearFiles()
     },
     
-  // 上传单个文件 (调用真实API)
-  async uploadSingleFile(file) {
-    try {
-      // 导入请求工具
-      const { upload } = await import('@/utils/request.js')
-      const { API_ENDPOINTS } = await import('@/utils/constants.js')
-      
-      // 准备表单数据
-      const formData = {
-        name: file.name,
-        description: `${this.currentFileTypeText}文件`
+    // 上传单个文件 (调用真实API)
+    async uploadSingleFile(file) {
+      try {
+        console.log('📤 开始上传文件:', file.name)
+        console.log('🔗 上传API端点:', API_ENDPOINTS.FILES.UPLOAD)
+        
+        // 准备表单数据
+        const formData = {
+          name: file.name,
+          description: `${this.currentFileTypeText}文件`,
+          type: this.currentFileType
+        }
+        
+        console.log('📋 表单数据:', formData)
+        
+        // 调用上传API
+        const result = await upload(
+          API_ENDPOINTS.FILES.UPLOAD,
+          file.path || file.url,
+          formData
+        )
+        
+        console.log('✅ 文件上传成功:', result)
+        
+        return {
+          success: true,
+          recordCount: result.parsed_questions || 0,
+          fileId: result.id
+        }
+      } catch (error) {
+        console.error('❌ 文件上传失败:', error)
+        throw new Error(error.message || '文件上传失败')
       }
-      
-      // 调用上传API
-      const result = await upload(
-        API_ENDPOINTS.FILES.UPLOAD,
-        file.path || file.url,
-        formData
-      )
-      
-      return {
-        success: true,
-        recordCount: result.parsed_questions || 0,
-        fileId: result.id
-      }
-    } catch (error) {
-      console.error('文件上传失败:', error)
-      throw new Error(error.message || '文件上传失败')
-    }
-  },
+    },
     
     // 添加到上传历史
     addToHistory(record) {

@@ -313,18 +313,9 @@ export class LoginStateManager {
  * 路由守卫工具
  */
 export class RouteGuard {
-  // 需要登录的页面列表
-  static PROTECTED_ROUTES = [
-    '/pages/profile/profile',
-    '/pages/upload/upload',
-    // 可以根据需要添加更多页面
-  ]
-  
-  // 不需要登录就能访问的页面列表
+  // 不需要登录就能访问的页面列表（公开页面）
+  // 默认情况下，除了这些页面，所有其他页面都需要登录
   static PUBLIC_ROUTES = [
-    '/pages/index/index',
-    '/pages/study/study',
-    '/pages/question/question',
     '/pages/login/login'
   ]
   
@@ -334,7 +325,8 @@ export class RouteGuard {
    * @returns {boolean} 是否需要登录
    */
   static isProtectedRoute(path) {
-    return this.PROTECTED_ROUTES.some(route => path.startsWith(route))
+    // 默认所有页面都需要登录，除非在公开页面列表中
+    return !this.isPublicRoute(path)
   }
   
   /**

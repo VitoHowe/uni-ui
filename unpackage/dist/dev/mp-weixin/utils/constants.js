@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const API_CONFIG = {
   // 基础API地址
   BASE_URL: "http://localhost:3000/api",

@@ -29,6 +29,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { LoginStateManager, RouteGuard } from '@/utils/auth.js'
 
 // 定义props
 const props = defineProps({
@@ -74,15 +75,61 @@ const tabList = [
 const switchTab = (tab, index) => {
   if (currentIndex.value === index) return
   
+  // 检查页面访问权限
+  if (RouteGuard.isProtectedRoute(tab.pagePath)) {
+    const isLoggedIn = LoginStateManager.getLoginState()
+    
+    if (!isLoggedIn) {
+      console.log('❌ Tab切换需要登录权限:', tab.pagePath)
+      
+      // 保存目标路径，用于登录成功后跳转
+      RouteGuard.saveReturnPath(tab.pagePath)
+      
+      // 显示登录提示
+      uni.showModal({
+        title: '需要登录',
+        content: '访问此页面需要登录，是否立即登录？',
+        confirmText: '立即登录',
+        cancelText: '稍后再说',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到登录页面
+            uni.navigateTo({
+              url: '/pages/login/login'
+            })
+          }
+          // 注意：无论用户选择什么，都不改变当前tab状态
+        }
+      })
+      
+      // 权限检查失败，不切换tab状态
+      return
+    }
+  }
+  
+  // 权限检查通过，切换tab状态
   currentIndex.value = index
   emit('change', index)
   
+  // 执行页面跳转
   uni.switchTab({
     url: tab.pagePath,
     fail: () => {
       // 如果switchTab失败，使用redirectTo
       uni.redirectTo({
-        url: tab.pagePath
+        url: tab.pagePath,
+        fail: () => {
+          // 如果页面跳转彻底失败，恢复原来的tab状态
+          console.error('❌ 页面跳转失败，恢复tab状态')
+          // 这里需要恢复到之前的状态，但由于我们无法确定之前的状态
+          // 可以通过emit通知父组件处理，或者重新计算当前页面对应的tab
+          
+          // 简单的处理方式：显示错误提示
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'error'
+          })
+        }
       })
     }
   })

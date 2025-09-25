@@ -259,7 +259,7 @@ class RouteGuard {
    * @returns {boolean} 是否需要登录
    */
   static isProtectedRoute(path) {
-    return this.PROTECTED_ROUTES.some((route) => path.startsWith(route));
+    return !this.isPublicRoute(path);
   }
   /**
    * 检查页面是否为公开页面
@@ -286,17 +286,9 @@ class RouteGuard {
     return path;
   }
 }
-// 需要登录的页面列表
-__publicField(RouteGuard, "PROTECTED_ROUTES", [
-  "/pages/profile/profile",
-  "/pages/upload/upload"
-  // 可以根据需要添加更多页面
-]);
-// 不需要登录就能访问的页面列表
+// 不需要登录就能访问的页面列表（公开页面）
+// 默认情况下，除了这些页面，所有其他页面都需要登录
 __publicField(RouteGuard, "PUBLIC_ROUTES", [
-  "/pages/index/index",
-  "/pages/study/study",
-  "/pages/question/question",
   "/pages/login/login"
 ]);
 class PermissionChecker {
