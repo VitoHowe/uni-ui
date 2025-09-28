@@ -1,7 +1,7 @@
 "use strict";
 const API_CONFIG = {
   // 基础API地址
-  BASE_URL: "http://localhost:3000/api",
+  BASE_URL: "http://localhost:3001/api",
   // 超时时间 (毫秒)
   TIMEOUT: 1e4,
   // Token过期前刷新时间 (毫秒) - 提前5分钟刷新

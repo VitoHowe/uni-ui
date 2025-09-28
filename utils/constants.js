@@ -1,7 +1,7 @@
 // API配置常量
 export const API_CONFIG = {
   // 基础API地址
-  BASE_URL: 'http://localhost:3000/api',
+  BASE_URL: 'http://localhost:3001/api',
   
   // 超时时间 (毫秒)
   TIMEOUT: 10000,
