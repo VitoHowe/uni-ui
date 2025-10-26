@@ -20,7 +20,7 @@ const CustomTabBar = () => "../../components/CustomTabBar.js";
 const _sfc_main = {
   __name: "question",
   setup(__props) {
-    const practiceModess = common_vendor.reactive([
+    const practiceModes = common_vendor.reactive([
       {
         name: "真题练习",
         description: "历年考试真题，贴近实际考试",
@@ -81,6 +81,12 @@ const _sfc_main = {
       }
     ]);
     const startPractice = (mode) => {
+      if (mode.name === "模拟考试") {
+        common_vendor.index.navigateTo({
+          url: "/pages/exam-list/exam-list"
+        });
+        return;
+      }
       common_vendor.index.showToast({
         title: `开始${mode.name}`,
         icon: "none"
@@ -114,11 +120,11 @@ const _sfc_main = {
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/question/question.vue:214", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/question/question.vue:222", "切换到tab:", index);
     };
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: common_vendor.f(practiceModess, (mode, index, i0) => {
+        a: common_vendor.f(practiceModes, (mode, index, i0) => {
           return {
             a: "a6df9a91-1-" + i0 + ",a6df9a91-0",
             b: common_vendor.p({

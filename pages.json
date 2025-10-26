@@ -37,12 +37,25 @@
 				"navigationStyle": "custom"
 			}
 		},
-		{
-			"path": "pages/debug/debug",
-			"style": {
-				"navigationBarTitleText": "调试工具"
-			}
+	{
+		"path": "pages/debug/debug",
+		"style": {
+			"navigationBarTitleText": "调试工具"
 		}
+	},
+	{
+		"path": "pages/exam-list/exam-list",
+		"style": {
+			"navigationBarTitleText": "题库列表"
+		}
+	},
+	{
+		"path": "pages/exam/exam",
+		"style": {
+			"navigationBarTitleText": "答题练习",
+			"navigationStyle": "custom"
+		}
+	}
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",

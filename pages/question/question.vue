@@ -28,7 +28,7 @@
         <view class="mode-list">
           <view 
             class="mode-item" 
-            v-for="(mode, index) in practiceModess" 
+            v-for="(mode, index) in practiceModes" 
             :key="index"
             @click="startPractice(mode)"
           >
@@ -99,7 +99,7 @@ import { ref, reactive } from 'vue'
 import CustomTabBar from "@/components/CustomTabBar.vue"
 
 // 练习模式数据
-const practiceModess = reactive([
+const practiceModes = reactive([
   {
     name: '真题练习',
     description: '历年考试真题，贴近实际考试',
@@ -167,6 +167,14 @@ const fabContent = reactive([
 
 // 开始练习
 const startPractice = (mode) => {
+  // 如果是模拟考试，跳转到题库列表页面
+  if (mode.name === '模拟考试') {
+    uni.navigateTo({
+      url: '/pages/exam-list/exam-list'
+    })
+    return
+  }
+  
   uni.showToast({
     title: `开始${mode.name}`,
     icon: 'none'

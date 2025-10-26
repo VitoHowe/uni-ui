@@ -11,6 +11,8 @@ if (!Math) {
   "./pages/upload/upload.js";
   "./pages/login/login.js";
   "./pages/debug/debug.js";
+  "./pages/exam-list/exam-list.js";
+  "./pages/exam/exam.js";
 }
 const _sfc_main = {
   async onLaunch() {

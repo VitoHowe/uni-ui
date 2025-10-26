@@ -427,7 +427,13 @@ class RequestManager {
   }
 }
 const request = new RequestManager();
+const get = (url, params, options) => request.get(url, params, options);
+const post = (url, data, options) => request.post(url, data, options);
+const del = (url, options) => request.delete(url, options);
 const upload = (url, filePath, formData, options) => request.upload(url, filePath, formData, options);
+exports.del = del;
+exports.get = get;
+exports.post = post;
 exports.request = request;
 exports.upload = upload;
 //# sourceMappingURL=../../.sourcemap/mp-weixin/utils/request.js.map

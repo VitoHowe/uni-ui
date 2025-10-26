@@ -6,7 +6,9 @@
     "pages/profile/profile",
     "pages/upload/upload",
     "pages/login/login",
-    "pages/debug/debug"
+    "pages/debug/debug",
+    "pages/exam-list/exam-list",
+    "pages/exam/exam"
   ],
   "window": {
     "navigationBarTextStyle": "black",

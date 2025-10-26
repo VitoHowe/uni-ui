@@ -7120,7 +7120,7 @@ function isConsoleWritable() {
 function initRuntimeSocketService() {
   const hosts = "192.168.31.31,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_GA09a6";
+  const id = "mp-weixin_Y2pdd3";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8660,6 +8660,14 @@ This will fail in production.`);
   useStore.$id = id;
   return useStore;
 }
+const createLifeCycleHook = (lifecycle, flag = 0) => (hook, target = getCurrentInstance()) => {
+  !isInSSRComponentSetup && injectHook(lifecycle, hook, target);
+};
+const onShow = /* @__PURE__ */ createLifeCycleHook(
+  ON_SHOW,
+  1 | 2
+  /* HookFlags.PAGE */
+);
 const pages = [
   {
     path: "pages/index/index",
@@ -8702,6 +8710,19 @@ const pages = [
     path: "pages/debug/debug",
     style: {
       navigationBarTitleText: "调试工具"
+    }
+  },
+  {
+    path: "pages/exam-list/exam-list",
+    style: {
+      navigationBarTitleText: "题库列表"
+    }
+  },
+  {
+    path: "pages/exam/exam",
+    style: {
+      navigationBarTitleText: "答题练习",
+      navigationStyle: "custom"
     }
   }
 ];
@@ -11576,6 +11597,8 @@ exports.index = index;
 exports.n = n$1;
 exports.o = o$1;
 exports.onMounted = onMounted;
+exports.onShow = onShow;
+exports.onUnmounted = onUnmounted;
 exports.p = p$1;
 exports.reactive = reactive;
 exports.ref = ref;
@@ -11585,5 +11608,6 @@ exports.sr = sr;
 exports.t = t$1;
 exports.tr = tr;
 exports.unref = unref;
+exports.watch = watch;
 exports.wx$1 = wx$1;
 //# sourceMappingURL=../../.sourcemap/mp-weixin/common/vendor.js.map
