@@ -7,8 +7,8 @@
           <uni-icons type="back" size="20" color="#333" />
         </view>
         <view class="exam-title">
-          <text class="title-text">{{ bankInfo.bank_name }}</text>
-          <text class="subtitle-text">{{ currentIndex + 1 }} / {{ questions.length }}</text>
+          <text class="title-text">{{ titleText }}</text>
+          <text class="subtitle-text">{{ subtitleText }}</text>
         </view>
         <view class="stats-btn" @click="showStats">
           <uni-icons type="bars" size="20" color="#333" />
@@ -132,7 +132,7 @@
       <view class="action-buttons">
         <button 
           class="action-btn secondary"
-          :disabled="currentIndex === 0"
+          :disabled="!hasPrevQuestion && (practiceMode === 'chapter' || !canSwitchToPrevChapter())"
           @click="prevQuestion"
         >
           <uni-icons type="back" size="18" color="#fff" />
@@ -157,7 +157,7 @@
         </button>
 
         <button 
-          v-if="currentIndex < questions.length - 1"
+          v-if="hasNextQuestion || (practiceMode === 'full' && canSwitchToNextChapter())"
           class="action-btn secondary"
           @click="nextQuestion"
         >
@@ -205,22 +205,9 @@
             <text class="accuracy-label">正确率</text>
             <text class="accuracy-value">{{ accuracy }}%</text>
           </view>
-
-          <view class="question-grid">
-            <view 
-              v-for="(q, index) in questions" 
-              :key="index"
-              class="grid-item"
-              :class="{
-                'current': index === currentIndex,
-                'answered': userAnswers[index],
-                'correct': userAnswers[index] && checkAnswer(index),
-                'wrong': userAnswers[index] && !checkAnswer(index)
-              }"
-              @click="jumpToQuestion(index)"
-            >
-              <text class="grid-number">{{ index + 1 }}</text>
-            </view>
+          
+          <view class="stats-note">
+            <text class="note-text">💡 统计数据基于本次会话答题情况</text>
           </view>
         </view>
 
@@ -237,20 +224,34 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { get, post, del } from '@/utils/request.js'
 
-// 获取页面参数
+// 页面参数
+const bankId = ref(0)
+const practiceMode = ref('full') // 'chapter' | 'full'
+const startChapterId = ref(null)
+const startQuestionNumber = ref(1)
+
+// 题库信息
 const bankInfo = ref({
   bank_name: '',
-  file_name: ''
+  total_questions: 0
 })
-const resultId = ref(0)
-const bankId = ref(0)
 
-// 题目数据
-const questions = ref([])
-const currentIndex = ref(0)
-const userAnswers = ref({}) // 用户答案记录 {index: answer}
+// 章节数据
+const chapters = ref([]) // 所有章节列表
+const currentChapterIndex = ref(0) // 当前章节索引
+const currentChapter = ref(null) // 当前章节对象
+
+// 当前题目
+const currentQuestionNumber = ref(1) // 当前题号（章节内，从1开始）
+const currentQuestion = ref(null) // 当前题目对象
+const totalInChapter = ref(0) // 当前章节总题数
+const hasNextQuestion = ref(true) // 是否有下一题
+const hasPrevQuestion = ref(true) // 是否有上一题
+
+// 答题数据
+const userAnswers = ref({}) // {chapterId_questionNumber: answer}
 const showAnswer = ref(false)
-const historyAnsweredCount = ref(0) // 历史累计已答题数
+const questionCache = ref({}) // 题目缓存 {chapterId_questionNumber: question}
 
 // 加载状态
 const loading = ref(false)
@@ -258,16 +259,61 @@ const loading = ref(false)
 // 弹窗引用
 const statsPopup = ref(null)
 
-// 当前题目
-const currentQuestion = computed(() => questions.value[currentIndex.value] || null)
+// 答案key格式：chapterId_questionNumber
+const getAnswerKey = () => {
+  if (!currentChapter.value) return ''
+  return `${currentChapter.value.id}_${currentQuestionNumber.value}`
+}
 
 // 用户当前题目的答案
-const userAnswer = computed(() => userAnswers.value[currentIndex.value] || '')
+const userAnswer = computed(() => userAnswers.value[getAnswerKey()] || '')
+
+// 标题文本
+const titleText = computed(() => {
+  if (practiceMode.value === 'chapter') {
+    return currentChapter.value?.chapter_name || bankInfo.value.bank_name
+  }
+  return bankInfo.value.bank_name
+})
+
+// 副标题文本
+const subtitleText = computed(() => {
+  if (practiceMode.value === 'chapter') {
+    return `第 ${currentQuestionNumber.value} / ${totalInChapter.value} 题`
+  }
+  
+  // 整卷模式显示总进度
+  let position = 0
+  chapters.value.forEach((chapter, index) => {
+    if (index < currentChapterIndex.value) {
+      position += chapter.question_count
+    }
+  })
+  position += currentQuestionNumber.value
+  
+  const chapterName = currentChapter.value?.chapter_name || ''
+  return `第 ${position} / ${bankInfo.value.total_questions} 题 (${chapterName})`
+})
 
 // 进度百分比
 const progressPercent = computed(() => {
-  if (questions.value.length === 0) return 0
-  return Math.round((currentIndex.value + 1) / questions.value.length * 100)
+  if (practiceMode.value === 'chapter') {
+    return totalInChapter.value > 0 ? Math.round((currentQuestionNumber.value / totalInChapter.value) * 100) : 0
+  }
+  
+  // 整卷模式计算整体进度
+  let totalQuestions = 0
+  let currentPosition = 0
+  
+  chapters.value.forEach((chapter, index) => {
+    totalQuestions += chapter.question_count
+    if (index < currentChapterIndex.value) {
+      currentPosition += chapter.question_count
+    }
+  })
+  currentPosition += currentQuestionNumber.value
+  
+  return totalQuestions > 0 ? Math.round((currentPosition / totalQuestions) * 100) : 0
 })
 
 // 已答题数
@@ -275,7 +321,10 @@ const answeredCount = computed(() => Object.keys(userAnswers.value).length)
 
 // 正确数
 const correctCount = computed(() => {
-  return Object.keys(userAnswers.value).filter(index => checkAnswer(parseInt(index))).length
+  return Object.keys(userAnswers.value).filter(key => {
+    const userAns = userAnswers.value[key]
+    return checkAnswerByKey(key, userAns)
+  }).length
 })
 
 // 错误数
@@ -294,20 +343,28 @@ const isAnswerCorrect = computed(() => {
 })
 
 // 页面加载
-onMounted(() => {
-  // 获取页面参数
+onMounted(async () => {
+  // 获取路由参数
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   const options = currentPage.options
   
-  resultId.value = parseInt(options.resultId) || 0
   bankId.value = parseInt(options.bankId) || 0
+  practiceMode.value = options.mode || 'full'
+  startChapterId.value = parseInt(options.chapterId) || null
+  startQuestionNumber.value = parseInt(options.questionNumber) || 1
   
-  if (resultId.value) {
-    fetchExamData()
+  if (!bankId.value) {
+    uni.showToast({ title: '参数错误', icon: 'none' })
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 1500)
+    return
   }
   
-  // 监听小程序隐藏事件（用户切换应用或返回桌面）
+  await initExam()
+  
+  // 监听小程序隐藏事件
   uni.onAppHide(() => {
     saveProgress()
   })
@@ -318,63 +375,146 @@ onUnmounted(() => {
   saveProgress()
 })
 
-// 监听题目切换，自动保存进度
-watch(currentIndex, (newIndex, oldIndex) => {
-  // 当题目发生变化时保存进度
-  if (oldIndex !== undefined && newIndex !== oldIndex) {
+// 监听题号和章节变化，自动保存进度
+watch([currentQuestionNumber, currentChapterIndex], ([newQuestionNum, newChapterIdx], [oldQuestionNum, oldChapterIdx]) => {
+  if ((oldQuestionNum !== undefined && newQuestionNum !== oldQuestionNum) ||
+      (oldChapterIdx !== undefined && newChapterIdx !== oldChapterIdx)) {
     saveProgress()
   }
 })
 
-// 获取考试数据
-const fetchExamData = async () => {
+// 初始化考试
+const initExam = async () => {
   loading.value = true
   try {
-    // 1. 获取题库数据
-    const data = await get(`/parse-results/${resultId.value}`)
-    
+    // 1. 获取题库基本信息（使用新的题库管理API）
+    const bankData = await get(`/questions/banks/${bankId.value}`)
     bankInfo.value = {
-      bank_name: data.bank_name,
-      file_name: data.file_name
+      bank_name: bankData.name || '题库',
+      total_questions: bankData.stats?.total_questions || 0
     }
-    questions.value = data.questions || []
     
-    // 2. 获取学习进度
-    try {
-      const progressData = await get(`/user-progress/${bankId.value}`)
-      
-      if (progressData && progressData.current_question_index > 0) {
-        // 有学习进度，跳转到上次学习位置
-        const lastIndex = progressData.current_question_index
-        
-        // 保存历史已答题数量
-        historyAnsweredCount.value = progressData.completed_count || 0
-        
-        // 确保索引不超过题目总数
-        if (lastIndex < questions.value.length) {
-          currentIndex.value = lastIndex
-          
-          console.log(`📖 继续学习，从第 ${lastIndex + 1} 题开始，历史已答 ${historyAnsweredCount.value} 题`)
-        }
-      } else {
-        console.log('🆕 开始新的学习')
-        historyAnsweredCount.value = 0
-      }
-    } catch (progressError) {
-      console.error('获取学习进度失败:', progressError)
-      // 进度获取失败，从第一题开始
-      currentIndex.value = 0
-      historyAnsweredCount.value = 0
+    // 2. 获取章节列表
+    const chaptersData = await get(`/question-banks/${bankId.value}/chapters`)
+    chapters.value = chaptersData.chapters || []
+    
+    if (chapters.value.length === 0) {
+      uni.showToast({ title: '该题库暂无章节', icon: 'none' })
+      setTimeout(() => uni.navigateBack(), 1500)
+      return
     }
+    
+    // 3. 确定起始章节
+    if (startChapterId.value) {
+      const index = chapters.value.findIndex(c => c.id === startChapterId.value)
+      currentChapterIndex.value = index >= 0 ? index : 0
+    } else {
+      currentChapterIndex.value = 0
+    }
+    
+    currentChapter.value = chapters.value[currentChapterIndex.value]
+    currentQuestionNumber.value = startQuestionNumber.value
+    
+    // 4. 加载起始题目
+    await loadQuestion()
+    
+    console.log(`📖 开始${practiceMode.value === 'chapter' ? '章节' : '整卷'}练习`, {
+      chapter: currentChapter.value.chapter_name,
+      questionNumber: currentQuestionNumber.value
+    })
     
   } catch (error) {
-    console.error('获取题库失败:', error)
+    console.error('初始化失败:', error)
+    uni.showToast({
+      title: error.message || '加载失败',
+      icon: 'none'
+    })
+    setTimeout(() => uni.navigateBack(), 1500)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载题目（单题模式）
+const loadQuestion = async () => {
+  if (!currentChapter.value) return
+  
+  loading.value = true
+  try {
+    const response = await get(
+      `/question-banks/${bankId.value}/chapters/${currentChapter.value.id}/questions`,
+      { questionNumber: currentQuestionNumber.value }
+    )
+    
+    if (response.question) {
+      currentQuestion.value = response.question
+      totalInChapter.value = response.total
+      hasNextQuestion.value = response.hasNext
+      hasPrevQuestion.value = response.hasPrev
+      
+      // 缓存题目
+      const cacheKey = getAnswerKey()
+      questionCache.value[cacheKey] = response.question
+      
+      // 重置答案显示状态
+      showAnswer.value = false
+      
+      console.log(`📖 加载题目: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`)
+    } else {
+      // 没有更多题目了
+      if (practiceMode.value === 'full' && canSwitchToNextChapter()) {
+        // 整卷模式，自动切换到下一章节
+        await switchToNextChapter()
+      } else {
+        uni.showToast({ title: '已是最后一题', icon: 'none' })
+      }
+    }
+  } catch (error) {
+    console.error('加载题目失败:', error)
     uni.showToast({
       title: error.message || '加载失败',
       icon: 'none'
     })
   } finally {
     loading.value = false
+  }
+}
+
+// 检查是否可以切换到下一章节
+const canSwitchToNextChapter = () => {
+  return currentChapterIndex.value < chapters.value.length - 1
+}
+
+// 检查是否可以切换到上一章节
+const canSwitchToPrevChapter = () => {
+  return currentChapterIndex.value > 0
+}
+
+// 切换到下一章节
+const switchToNextChapter = async () => {
+  if (canSwitchToNextChapter()) {
+    currentChapterIndex.value++
+    currentChapter.value = chapters.value[currentChapterIndex.value]
+    currentQuestionNumber.value = 1
+    
+    uni.showToast({
+      title: `进入${currentChapter.value.chapter_name}`,
+      icon: 'none',
+      duration: 1500
+    })
+    
+    await loadQuestion()
+  }
+}
+
+// 切换到上一章节
+const switchToPrevChapter = async () => {
+  if (canSwitchToPrevChapter()) {
+    currentChapterIndex.value--
+    currentChapter.value = chapters.value[currentChapterIndex.value]
+    currentQuestionNumber.value = currentChapter.value.question_count
+    
+    await loadQuestion()
   }
 }
 
@@ -438,10 +578,11 @@ const selectOption = (optionIndex) => {
   if (showAnswer.value) return // 已显示答案时不能再选择
   
   const label = getOptionLabel(optionIndex)
+  const key = getAnswerKey()
   
   if (currentQuestion.value.type === 'multiple') {
     // 多选题
-    let currentAnswer = userAnswers.value[currentIndex.value] || ''
+    let currentAnswer = userAnswers.value[key] || ''
     
     if (currentAnswer.includes(label)) {
       // 取消选择
@@ -454,10 +595,10 @@ const selectOption = (optionIndex) => {
     // 按字母顺序排序
     currentAnswer = currentAnswer.split('').sort().join('')
     
-    userAnswers.value[currentIndex.value] = currentAnswer
+    userAnswers.value[key] = currentAnswer
   } else {
     // 单选题或判断题
-    userAnswers.value[currentIndex.value] = label
+    userAnswers.value[key] = label
   }
   
   // 选择后自动显示答案
@@ -472,36 +613,81 @@ const toggleAnswer = () => {
 }
 
 // 上一题
-const prevQuestion = () => {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-    showAnswer.value = false
+const prevQuestion = async () => {
+  if (hasPrevQuestion.value) {
+    // 章节内有上一题
+    currentQuestionNumber.value--
+    await loadQuestion()
+  } else {
+    // 章节内没有上一题了
+    if (practiceMode.value === 'full' && canSwitchToPrevChapter()) {
+      // 整卷模式，可以返回上一章节
+      uni.showModal({
+        title: '返回上一章节',
+        content: '是否返回上一章节的最后一题？',
+        success: async (res) => {
+          if (res.confirm) {
+            await switchToPrevChapter()
+          }
+        }
+      })
+    } else {
+      uni.showToast({ title: '已是第一题', icon: 'none' })
+    }
   }
 }
 
 // 下一题
-const nextQuestion = () => {
-  if (currentIndex.value < questions.value.length - 1) {
-    currentIndex.value++
-    showAnswer.value = false
+const nextQuestion = async () => {
+  // 保存当前进度
+  await saveProgress()
+  
+  if (hasNextQuestion.value) {
+    // 章节内有下一题
+    currentQuestionNumber.value++
+    await loadQuestion()
+  } else {
+    // 章节内没有下一题了
+    if (practiceMode.value === 'full' && canSwitchToNextChapter()) {
+      // 整卷模式，切换到下一章节
+      uni.showModal({
+        title: '章节完成',
+        content: `「${currentChapter.value.chapter_name}」已完成\n\n是否继续下一章节？`,
+        confirmText: '继续',
+        cancelText: '退出',
+        success: async (res) => {
+          if (res.confirm) {
+            await switchToNextChapter()
+          } else {
+            handleBack()
+          }
+        }
+      })
+    } else {
+      // 章节练习模式或已是最后一章
+      uni.showToast({ title: '本章节已完成', icon: 'success' })
+      finishExam()
+    }
   }
 }
 
-// 跳转到指定题目
-const jumpToQuestion = (index) => {
-  currentIndex.value = index
-  showAnswer.value = false
-  closeStats()
+// 跳转到指定题目（简化版，仅用于统计弹窗）
+const jumpToQuestion = async (questionNumber) => {
+  if (questionNumber >= 1 && questionNumber <= totalInChapter.value) {
+    currentQuestionNumber.value = questionNumber
+    await loadQuestion()
+    closeStats()
+  }
 }
 
-// 检查答案是否正确
-const checkAnswer = (index) => {
-  const userAns = userAnswers.value[index]
+// 检查答案是否正确（使用缓存的题目信息）
+const checkAnswerByKey = (answerKey, userAns) => {
   if (!userAns) return false
   
-  const question = questions.value[index]
-  const correctAns = formatAnswer(question.answer)
+  const cachedQuestion = questionCache.value[answerKey]
+  if (!cachedQuestion) return false
   
+  const correctAns = formatAnswer(cachedQuestion.answer)
   return userAns === correctAns
 }
 
@@ -515,43 +701,46 @@ const closeStats = () => {
   statsPopup.value.close()
 }
 
-// 保存学习进度
+// 保存学习进度（章节级别）
 const saveProgress = async () => {
-  if (!bankId.value || questions.value.length === 0) return
+  if (!bankId.value || !currentChapter.value) return
   
   try {
-    // 计算已完成题目数量：历史已答题数 + 本次新答题数
-    // 注意：这里的 answeredCount 是本次会话中答题的数量
-    const totalCompleted = historyAnsweredCount.value + answeredCount.value
+    // 获取当前章节的答题数
+    const chapterAnsweredCount = getChapterAnsweredCount(currentChapter.value.id)
     
-    await post(`/user-progress/${bankId.value}`, {
-      parse_result_id: resultId.value,
-      current_question_index: currentIndex.value,
-      completed_count: totalCompleted, // 累计已答题数
-      total_questions: questions.value.length
-    }, {
-      showLoading: false // 后台保存，不显示加载提示
-    })
+    await post(
+      `/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`,
+      {
+        current_question_number: currentQuestionNumber.value,
+        completed_count: chapterAnsweredCount,
+        total_questions: totalInChapter.value
+      },
+      { showLoading: false }
+    )
     
-    console.log('💾 学习进度已保存:', {
-      current: currentIndex.value + 1,
-      historyAnswered: historyAnsweredCount.value,
-      sessionAnswered: answeredCount.value,
-      totalCompleted: totalCompleted,
-      total: questions.value.length,
-      progress: progressPercent.value + '%'
+    console.log('💾 进度已保存:', {
+      chapter: currentChapter.value.chapter_name,
+      questionNumber: currentQuestionNumber.value,
+      answered: chapterAnsweredCount,
+      total: totalInChapter.value
     })
   } catch (error) {
-    console.error('保存学习进度失败:', error)
-    // 保存失败不影响用户操作
+    console.error('保存进度失败:', error)
   }
+}
+
+// 获取某章节的答题数
+const getChapterAnsweredCount = (chapterId) => {
+  const prefix = `${chapterId}_`
+  return Object.keys(userAnswers.value).filter(key => key.startsWith(prefix)).length
 }
 
 // 重置学习进度
 const resetProgress = async () => {
   uni.showModal({
     title: '重新练习',
-    content: '确定要清除当前进度，重新开始练习吗？',
+    content: '确定要清除当前章节进度，重新开始练习吗？',
     confirmText: '确定',
     cancelText: '取消',
     success: async (res) => {
@@ -559,14 +748,23 @@ const resetProgress = async () => {
         try {
           uni.showLoading({ title: '重置中...' })
           
-          // 调用重置接口
-          await del(`/user-progress/${bankId.value}`)
+          // 删除当前章节进度
+          if (practiceMode.value === 'chapter') {
+            // 章节练习：只删除当前章节
+            await del(`/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`)
+          } else {
+            // 整卷练习：删除所有章节进度
+            await del(`/user-progress/${bankId.value}`)
+          }
           
           // 重置本地状态
-          currentIndex.value = 0
+          currentQuestionNumber.value = 1
           userAnswers.value = {}
           showAnswer.value = false
-          historyAnsweredCount.value = 0 // 重置历史答题数
+          questionCache.value = {}
+          
+          // 重新加载第一题
+          await loadQuestion()
           
           uni.hideLoading()
           uni.showToast({
@@ -593,17 +791,18 @@ const finishExam = () => {
   // 保存最终进度
   saveProgress()
   
+  const totalQuestions = practiceMode.value === 'chapter' ? totalInChapter.value : bankInfo.value.total_questions
+  
   uni.showModal({
     title: '完成练习',
-    content: `已完成 ${answeredCount.value}/${questions.value.length} 题\n正确率：${accuracy.value}%`,
+    content: `已完成 ${answeredCount.value}/${totalQuestions} 题\n正确率：${accuracy.value}%`,
     confirmText: '查看统计',
-    cancelText: '重新练习',
+    cancelText: '返回',
     success: (res) => {
       if (res.confirm) {
         showStats()
       } else {
-        // 用户点击"重新练习"
-        resetProgress()
+        uni.navigateBack()
       }
     }
   })
@@ -1101,6 +1300,18 @@ const handleBack = () => {
   font-size: 40rpx;
   font-weight: bold;
   color: white;
+}
+
+.stats-note {
+  padding: 20rpx;
+  background: #f5f7fa;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.note-text {
+  font-size: 24rpx;
+  color: #666;
 }
 
 .question-grid {

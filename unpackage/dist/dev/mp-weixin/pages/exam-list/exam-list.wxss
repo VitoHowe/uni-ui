@@ -401,3 +401,97 @@ to {
   font-size: 30rpx;
   color: #333;
 }
+
+/* 练习模式选择弹窗 */
+.mode-popup.data-v-6b8bcde8 {
+  width: 600rpx;
+  background: white;
+  border-radius: 24rpx;
+  padding: 32rpx;
+}
+.mode-options.data-v-6b8bcde8 {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+.mode-card.data-v-6b8bcde8 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 32rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-radius: 16rpx;
+  border: 2rpx solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+.mode-card.data-v-6b8bcde8:active {
+  transform: scale(0.98);
+  border-color: #667eea;
+}
+.mode-title.data-v-6b8bcde8 {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 16rpx;
+}
+.mode-desc.data-v-6b8bcde8 {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+/* 章节选择弹窗 */
+.chapter-select-content.data-v-6b8bcde8 {
+  background: white;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.chapter-list.data-v-6b8bcde8 {
+  flex: 1;
+  margin-top: 24rpx;
+  max-height: 600rpx;
+}
+.chapter-item.data-v-6b8bcde8 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 24rpx;
+  background: #f5f7fa;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  transition: all 0.3s ease;
+}
+.chapter-item.data-v-6b8bcde8:active {
+  transform: scale(0.98);
+  background: #e3f2fd;
+}
+.chapter-info.data-v-6b8bcde8 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.chapter-name.data-v-6b8bcde8 {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+.chapter-count.data-v-6b8bcde8 {
+  font-size: 24rpx;
+  color: #999;
+}
+.chapter-progress.data-v-6b8bcde8 {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.progress-percent.data-v-6b8bcde8 {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: 600;
+}

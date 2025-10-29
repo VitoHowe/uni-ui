@@ -412,6 +412,16 @@ to {
   font-weight: bold;
   color: white;
 }
+.stats-note.data-v-970fed46 {
+  padding: 20rpx;
+  background: #f5f7fa;
+  border-radius: 12rpx;
+  text-align: center;
+}
+.note-text.data-v-970fed46 {
+  font-size: 24rpx;
+  color: #666;
+}
 .question-grid.data-v-970fed46 {
   display: grid;
   grid-template-columns: repeat(8, 1fr);

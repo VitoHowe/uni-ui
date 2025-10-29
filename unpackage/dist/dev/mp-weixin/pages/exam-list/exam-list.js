@@ -27,6 +27,8 @@ const _sfc_main = {
     const currentSort = common_vendor.ref("created_desc");
     const filterPopup = common_vendor.ref(null);
     const actionPopup = common_vendor.ref(null);
+    const modePopup = common_vendor.ref(null);
+    const chapterSelectPopup = common_vendor.ref(null);
     const totalBanks = common_vendor.computed(() => bankList.value.length);
     const totalQuestions = common_vendor.computed(() => {
       return bankList.value.reduce((sum, bank) => sum + bank.total_questions, 0);
@@ -63,51 +65,84 @@ const _sfc_main = {
       return list;
     });
     common_vendor.onShow(() => {
-      common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:265", "📱 题库列表页面显示，刷新数据...");
+      common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:324", "📱 题库列表页面显示，刷新数据...");
       fetchBankList();
     });
     const fetchBankList = async () => {
+      var _a;
       loading.value = true;
       try {
-        const data = await utils_request.get("/parse-results");
-        bankList.value = data || [];
-        try {
-          const progressData = await utils_request.get("/user-progress");
-          const progressMap = {};
-          if (progressData && progressData.length > 0) {
-            progressData.forEach((progress) => {
-              progressMap[progress.bank_id] = progress;
-            });
+        const response = await utils_request.get("/questions/banks");
+        const banks = response.banks || [];
+        bankList.value = banks.map((bank) => ({
+          id: bank.id,
+          bank_id: bank.id,
+          // 向后兼容
+          bank_name: bank.name,
+          file_name: bank.file_original_name,
+          total_questions: bank.question_count,
+          created_at: bank.created_at,
+          description: bank.description,
+          creator_name: bank.creator_name,
+          file_type: bank.file_type,
+          file_size: bank.file_size
+        }));
+        for (const bank of bankList.value) {
+          try {
+            const chaptersData = await utils_request.get(`/question-banks/${bank.id}/chapters`);
+            bank.chapters = chaptersData.chapters || [];
+            bank.totalChapters = chaptersData.totalChapters || 0;
+          } catch (error) {
+            common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:357", `获取题库${bank.id}章节失败:`, error);
+            bank.chapters = [];
+            bank.totalChapters = 0;
           }
-          bankList.value.forEach((bank) => {
-            const progress = progressMap[bank.bank_id];
-            if (progress) {
-              bank.current_question_index = progress.current_question_index || 0;
-              bank.completed_count = progress.completed_count || 0;
-              bank.last_study_time = progress.last_study_time;
-              const totalQuestions2 = bank.total_questions || progress.total_questions || 1;
-              const currentPosition = Math.max(progress.current_question_index || 0, progress.completed_count || 0);
-              bank.progress = Math.min(Math.round(currentPosition / totalQuestions2 * 100), 100);
-              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:303", `题库 ${bank.bank_name} 进度计算:`, {
-                current_index: progress.current_question_index,
-                completed: progress.completed_count,
+        }
+        for (const bank of bankList.value) {
+          try {
+            const progressData = await utils_request.get(`/user-progress/${bank.id}/chapters`);
+            bank.chapterProgress = progressData || [];
+            if (bank.chapterProgress.length > 0) {
+              let totalCompleted = 0;
+              let totalQuestions2 = 0;
+              bank.chapterProgress.forEach((cp) => {
+                totalCompleted += cp.completed_count || 0;
+                totalQuestions2 += cp.total_questions || 0;
+              });
+              bank.progress = totalQuestions2 > 0 ? Math.round(totalCompleted / totalQuestions2 * 100) : 0;
+              bank.completed_count = totalCompleted;
+              const lastStudied = bank.chapterProgress.reduce((latest, current) => {
+                if (!latest.last_study_time)
+                  return current;
+                if (!current.last_study_time)
+                  return latest;
+                return new Date(current.last_study_time) > new Date(latest.last_study_time) ? current : latest;
+              });
+              bank.current_chapter_id = lastStudied.chapter_id;
+              bank.current_question_number = lastStudied.current_question_number || 0;
+              bank.last_study_time = lastStudied.last_study_time;
+              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:393", `题库 ${bank.bank_name} 进度:`, {
+                id: bank.id,
+                chapters: bank.chapterProgress.length,
+                completed: totalCompleted,
                 total: totalQuestions2,
-                calculated_progress: bank.progress
+                progress: bank.progress
               });
             } else {
               bank.progress = 0;
-              bank.current_question_index = 0;
               bank.completed_count = 0;
+              bank.current_chapter_id = ((_a = bank.chapters[0]) == null ? void 0 : _a.id) || null;
+              bank.current_question_number = 0;
             }
-          });
-        } catch (progressError) {
-          common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:316", "获取学习进度失败:", progressError);
-          bankList.value.forEach((bank) => {
+          } catch (error) {
+            common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:407", `获取题库${bank.id}进度失败:`, error);
             bank.progress = 0;
-          });
+            bank.completed_count = 0;
+            bank.chapterProgress = [];
+          }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:323", "获取题库列表失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:414", "获取题库列表失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
@@ -167,36 +202,111 @@ const _sfc_main = {
     const applyFilter = () => {
       filterPopup.value.close();
     };
-    const startExam = (bank) => {
-      const hasProgress = bank.current_question_index > 0 && bank.current_question_index < bank.total_questions;
-      let title = "开始练习";
-      let content = `准备开始「${bank.bank_name}」练习
-共 ${bank.total_questions} 道题目`;
-      let confirmText = "开始";
-      if (hasProgress) {
-        title = "继续学习";
-        content = `「${bank.bank_name}」
-
-上次学习到第 ${bank.current_question_index + 1} 题
-进度：${bank.progress}%
-已完成：${bank.completed_count} 题
-
-是否继续学习？`;
-        confirmText = "继续";
+    const getProgressText = (bank) => {
+      var _a;
+      if (!bank.current_chapter_id || bank.current_question_number === 0) {
+        return "尚未开始";
       }
-      common_vendor.index.showModal({
-        title,
-        content,
-        confirmText,
-        cancelText: "取消",
-        success: (res) => {
-          if (res.confirm) {
-            common_vendor.index.navigateTo({
-              url: `/pages/exam/exam?bankId=${bank.bank_id}&resultId=${bank.id}`
-            });
+      const chapter = (_a = bank.chapters) == null ? void 0 : _a.find((c) => c.id === bank.current_chapter_id);
+      if (chapter) {
+        return `${chapter.chapter_name}: 第${bank.current_question_number}题`;
+      }
+      return `已完成 ${bank.completed_count} 题`;
+    };
+    const startExam = (bank) => {
+      if (!bank.chapters || bank.chapters.length === 0) {
+        common_vendor.index.showToast({
+          title: "该题库暂无章节",
+          icon: "none"
+        });
+        return;
+      }
+      selectedBank.value = bank;
+      modePopup.value.open();
+    };
+    const startChapterPractice = () => {
+      modePopup.value.close();
+      chapterSelectPopup.value.open();
+    };
+    const startFullPractice = () => {
+      var _a;
+      modePopup.value.close();
+      const bank = selectedBank.value;
+      let startChapterId = bank.current_chapter_id || ((_a = bank.chapters[0]) == null ? void 0 : _a.id);
+      let startQuestionNumber = 1;
+      if (bank.current_chapter_id && bank.current_question_number > 0) {
+        const chapterName = getChapterName(bank, bank.current_chapter_id);
+        common_vendor.index.showModal({
+          title: "继续练习",
+          content: `上次学习到「${chapterName}」第${bank.current_question_number}题
+
+是否继续？`,
+          confirmText: "继续",
+          cancelText: "从头开始",
+          success: (res) => {
+            var _a2;
+            if (res.confirm) {
+              startChapterId = bank.current_chapter_id;
+              startQuestionNumber = bank.current_question_number;
+            } else {
+              startChapterId = (_a2 = bank.chapters[0]) == null ? void 0 : _a2.id;
+              startQuestionNumber = 1;
+            }
+            navigateToExam("full", startChapterId, startQuestionNumber);
           }
-        }
+        });
+      } else {
+        navigateToExam("full", startChapterId, startQuestionNumber);
+      }
+    };
+    const selectChapterAndStart = (chapter) => {
+      var _a;
+      chapterSelectPopup.value.close();
+      const bank = selectedBank.value;
+      const chapterProgress = (_a = bank.chapterProgress) == null ? void 0 : _a.find((cp) => cp.chapter_id === chapter.id);
+      let startQuestionNumber = 1;
+      if (chapterProgress && chapterProgress.current_question_number > 0) {
+        common_vendor.index.showModal({
+          title: "继续练习",
+          content: `「${chapter.chapter_name}」
+
+上次学习到第${chapterProgress.current_question_number}题
+进度：${chapterProgress.progress_percentage}%
+
+是否继续？`,
+          confirmText: "继续",
+          cancelText: "从头开始",
+          success: (res) => {
+            if (res.confirm) {
+              startQuestionNumber = chapterProgress.current_question_number;
+            }
+            navigateToExam("chapter", chapter.id, startQuestionNumber);
+          }
+        });
+      } else {
+        navigateToExam("chapter", chapter.id, startQuestionNumber);
+      }
+    };
+    const navigateToExam = (mode, chapterId, questionNumber = 1) => {
+      const bank = selectedBank.value;
+      common_vendor.index.navigateTo({
+        url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}`
       });
+    };
+    const getChapterName = (bank, chapterId) => {
+      var _a;
+      const chapter = (_a = bank.chapters) == null ? void 0 : _a.find((c) => c.id === chapterId);
+      return chapter ? chapter.chapter_name : "";
+    };
+    const getChapterProgressText = (chapter) => {
+      var _a;
+      if (!selectedBank.value)
+        return "未开始";
+      const progress = (_a = selectedBank.value.chapterProgress) == null ? void 0 : _a.find((cp) => cp.chapter_id === chapter.id);
+      if (!progress || progress.current_question_number === 0) {
+        return "未开始";
+      }
+      return `${progress.progress_percentage}%`;
     };
     const showMoreActions = (bank) => {
       selectedBank.value = bank;
@@ -219,9 +329,9 @@ const _sfc_main = {
       actionPopup.value.close();
       common_vendor.index.showModal({
         title: "重置学习进度",
-        content: `确定要重置「${bank.bank_name}」的学习进度吗？
+        content: `确定要重置「${bank.bank_name}」的所有章节学习进度吗？
 
-当前进度：${bank.progress}%
+当前整体进度：${bank.progress}%
 已完成：${bank.completed_count} 题
 
 重置后将从第一题重新开始，此操作不可恢复。`,
@@ -232,7 +342,7 @@ const _sfc_main = {
           if (res.confirm) {
             try {
               common_vendor.index.showLoading({ title: "重置中..." });
-              await utils_request.del(`/user-progress/${bank.bank_id}`);
+              await utils_request.del(`/user-progress/${bank.id}`);
               await fetchBankList();
               common_vendor.index.hideLoading();
               common_vendor.index.showToast({
@@ -240,10 +350,10 @@ const _sfc_main = {
                 icon: "success",
                 duration: 2e3
               });
-              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:485", `🔄 题库 ${bank.bank_name} 学习进度已重置`);
+              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:665", `🔄 题库 ${bank.bank_name} 学习进度已重置`);
             } catch (error) {
               common_vendor.index.hideLoading();
-              common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:488", "重置进度失败:", error);
+              common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:668", "重置进度失败:", error);
               common_vendor.index.showToast({
                 title: error.message || "重置失败",
                 icon: "none",
@@ -260,6 +370,7 @@ const _sfc_main = {
       });
     };
     return (_ctx, _cache) => {
+      var _a;
       return common_vendor.e({
         a: common_vendor.p({
           type: "search",
@@ -327,17 +438,16 @@ const _sfc_main = {
             }),
             k: common_vendor.t(bank.progress || 0),
             l: (bank.progress || 0) + "%",
-            m: common_vendor.t(bank.current_question_index || 0),
-            n: common_vendor.t(bank.total_questions),
-            o: bank.completed_count > 0
+            m: common_vendor.t(getProgressText(bank)),
+            n: bank.completed_count > 0
           }, bank.completed_count > 0 ? {
-            p: common_vendor.t(bank.completed_count)
+            o: common_vendor.t(bank.completed_count)
           } : {}, {
-            q: "6b8bcde8-10-" + i0,
-            r: common_vendor.t(bank.current_question_index > 0 ? "继续学习" : "开始练习"),
-            s: common_vendor.o(($event) => startExam(bank), bank.id),
-            t: bank.id,
-            v: common_vendor.o(($event) => startExam(bank), bank.id)
+            p: "6b8bcde8-10-" + i0,
+            q: common_vendor.t(bank.current_question_index > 0 ? "继续学习" : "开始练习"),
+            r: common_vendor.o(($event) => startExam(bank), bank.id),
+            s: bank.id,
+            t: common_vendor.o(($event) => startExam(bank), bank.id)
           });
         }),
         s: common_vendor.p({
@@ -412,6 +522,57 @@ const _sfc_main = {
           "k": "actionPopup"
         }),
         K: common_vendor.p({
+          type: "bottom"
+        }),
+        L: common_vendor.p({
+          type: "closeempty",
+          size: "20",
+          color: "#999"
+        }),
+        M: common_vendor.o(($event) => modePopup.value.close()),
+        N: common_vendor.p({
+          type: "list",
+          size: "40",
+          color: "#667eea"
+        }),
+        O: common_vendor.o(startChapterPractice),
+        P: common_vendor.p({
+          type: "paperplane",
+          size: "40",
+          color: "#f5576c"
+        }),
+        Q: common_vendor.o(startFullPractice),
+        R: common_vendor.sr(modePopup, "6b8bcde8-16", {
+          "k": "modePopup"
+        }),
+        S: common_vendor.p({
+          type: "center"
+        }),
+        T: common_vendor.p({
+          type: "closeempty",
+          size: "20",
+          color: "#999"
+        }),
+        U: common_vendor.o(($event) => chapterSelectPopup.value.close()),
+        V: common_vendor.f((_a = selectedBank.value) == null ? void 0 : _a.chapters, (chapter, k0, i0) => {
+          return {
+            a: common_vendor.t(chapter.chapter_name),
+            b: common_vendor.t(chapter.question_count),
+            c: common_vendor.t(getChapterProgressText(chapter)),
+            d: "6b8bcde8-22-" + i0 + ",6b8bcde8-20",
+            e: chapter.id,
+            f: common_vendor.o(($event) => selectChapterAndStart(chapter), chapter.id)
+          };
+        }),
+        W: common_vendor.p({
+          type: "forward",
+          size: "16",
+          color: "#999"
+        }),
+        X: common_vendor.sr(chapterSelectPopup, "6b8bcde8-20", {
+          "k": "chapterSelectPopup"
+        }),
+        Y: common_vendor.p({
           type: "bottom"
         })
       });

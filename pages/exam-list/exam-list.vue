@@ -114,7 +114,7 @@
               <view class="progress-bar-bg">
                 <view class="progress-bar-fill" :style="{width: (bank.progress || 0) + '%'}"></view>
               </view>
-              <text class="progress-text">学到第 {{ bank.current_question_index || 0 }}/{{ bank.total_questions }} 题</text>
+              <text class="progress-text">{{ getProgressText(bank) }}</text>
             </view>
             <view v-if="bank.completed_count > 0" class="completed-info">
               <text class="completed-text">✓ 已完成 {{ bank.completed_count }} 题</text>
@@ -180,6 +180,63 @@
         </view>
       </view>
     </uni-popup>
+
+    <!-- 练习模式选择弹窗 -->
+    <uni-popup ref="modePopup" type="center">
+      <view class="mode-popup">
+        <view class="popup-header">
+          <text class="popup-title">选择练习模式</text>
+          <view class="close-btn" @click="modePopup.close()">
+            <uni-icons type="closeempty" size="20" color="#999" />
+          </view>
+        </view>
+        
+        <view class="mode-options">
+          <view class="mode-card" @click="startChapterPractice">
+            <uni-icons type="list" size="40" color="#667eea" />
+            <text class="mode-title">章节练习</text>
+            <text class="mode-desc">选择特定章节进行练习</text>
+          </view>
+          
+          <view class="mode-card" @click="startFullPractice">
+            <uni-icons type="paperplane" size="40" color="#f5576c" />
+            <text class="mode-title">整卷练习</text>
+            <text class="mode-desc">按顺序练习所有章节</text>
+          </view>
+        </view>
+      </view>
+    </uni-popup>
+
+    <!-- 章节选择弹窗 -->
+    <uni-popup ref="chapterSelectPopup" type="bottom">
+      <view class="chapter-select-content">
+        <view class="popup-header">
+          <text class="popup-title">选择章节</text>
+          <view class="close-btn" @click="chapterSelectPopup.close()">
+            <uni-icons type="closeempty" size="20" color="#999" />
+          </view>
+        </view>
+        
+        <scroll-view class="chapter-list" scroll-y>
+          <view 
+            v-for="chapter in selectedBank?.chapters" 
+            :key="chapter.id"
+            class="chapter-item"
+            @click="selectChapterAndStart(chapter)"
+          >
+            <view class="chapter-info">
+              <text class="chapter-name">{{ chapter.chapter_name }}</text>
+              <text class="chapter-count">{{ chapter.question_count }} 题</text>
+            </view>
+            
+            <view class="chapter-progress">
+              <text class="progress-percent">{{ getChapterProgressText(chapter) }}</text>
+              <uni-icons type="forward" size="16" color="#999" />
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
@@ -214,6 +271,8 @@ const currentSort = ref('created_desc')
 // 弹窗引用
 const filterPopup = ref(null)
 const actionPopup = ref(null)
+const modePopup = ref(null)
+const chapterSelectPopup = ref(null)
 
 // 统计数据
 const totalBanks = computed(() => bankList.value.length)
@@ -270,54 +329,86 @@ onShow(() => {
 const fetchBankList = async () => {
   loading.value = true
   try {
-    // 1. 获取题库列表
-    const data = await get('/parse-results')
-    bankList.value = data || []
+    // 1. 获取题库列表（使用新的题库管理API）
+    const response = await get('/questions/banks')
+    const banks = response.banks || []
     
-    // 2. 获取用户所有学习进度
-    try {
-      const progressData = await get('/user-progress')
-      const progressMap = {}
-      
-      // 将进度数据转换为以 bank_id 为键的对象
-      if (progressData && progressData.length > 0) {
-        progressData.forEach(progress => {
-          progressMap[progress.bank_id] = progress
-        })
+    // 映射字段名称以兼容现有代码
+    bankList.value = banks.map(bank => ({
+      id: bank.id,
+      bank_id: bank.id, // 向后兼容
+      bank_name: bank.name,
+      file_name: bank.file_original_name,
+      total_questions: bank.question_count,
+      created_at: bank.created_at,
+      description: bank.description,
+      creator_name: bank.creator_name,
+      file_type: bank.file_type,
+      file_size: bank.file_size
+    }))
+    
+    // 2. 获取每个题库的章节信息
+    for (const bank of bankList.value) {
+      try {
+        const chaptersData = await get(`/question-banks/${bank.id}/chapters`)
+        bank.chapters = chaptersData.chapters || []
+        bank.totalChapters = chaptersData.totalChapters || 0
+      } catch (error) {
+        console.error(`获取题库${bank.id}章节失败:`, error)
+        bank.chapters = []
+        bank.totalChapters = 0
       }
-      
-      // 3. 合并进度数据到题库列表
-      bankList.value.forEach(bank => {
-        const progress = progressMap[bank.bank_id]
-        if (progress) {
-          bank.current_question_index = progress.current_question_index || 0
-          bank.completed_count = progress.completed_count || 0
-          bank.last_study_time = progress.last_study_time
+    }
+    
+    // 3. 获取所有章节的学习进度（新的章节级别API）
+    for (const bank of bankList.value) {
+      try {
+        const progressData = await get(`/user-progress/${bank.id}/chapters`)
+        bank.chapterProgress = progressData || []
+        
+        // 计算整体进度
+        if (bank.chapterProgress.length > 0) {
+          let totalCompleted = 0
+          let totalQuestions = 0
           
-          // 计算进度：基于当前学习位置，而不是已完成数量
-          // 如果用户已经查看了题目但没作答，仍然算作进度
-          const totalQuestions = bank.total_questions || progress.total_questions || 1
-          const currentPosition = Math.max(progress.current_question_index || 0, progress.completed_count || 0)
-          bank.progress = Math.min(Math.round((currentPosition / totalQuestions) * 100), 100)
+          bank.chapterProgress.forEach(cp => {
+            totalCompleted += cp.completed_count || 0
+            totalQuestions += cp.total_questions || 0
+          })
           
-          console.log(`题库 ${bank.bank_name} 进度计算:`, {
-            current_index: progress.current_question_index,
-            completed: progress.completed_count,
+          bank.progress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0
+          bank.completed_count = totalCompleted
+          
+          // 找到最近学习的章节
+          const lastStudied = bank.chapterProgress.reduce((latest, current) => {
+            if (!latest.last_study_time) return current
+            if (!current.last_study_time) return latest
+            return new Date(current.last_study_time) > new Date(latest.last_study_time) ? current : latest
+          })
+          
+          bank.current_chapter_id = lastStudied.chapter_id
+          bank.current_question_number = lastStudied.current_question_number || 0
+          bank.last_study_time = lastStudied.last_study_time
+          
+          console.log(`题库 ${bank.bank_name} 进度:`, {
+            id: bank.id,
+            chapters: bank.chapterProgress.length,
+            completed: totalCompleted,
             total: totalQuestions,
-            calculated_progress: bank.progress
+            progress: bank.progress
           })
         } else {
           bank.progress = 0
-          bank.current_question_index = 0
           bank.completed_count = 0
+          bank.current_chapter_id = bank.chapters[0]?.id || null
+          bank.current_question_number = 0
         }
-      })
-    } catch (progressError) {
-      console.error('获取学习进度失败:', progressError)
-      // 进度获取失败不影响题库列表显示
-      bankList.value.forEach(bank => {
+      } catch (error) {
+        console.error(`获取题库${bank.id}进度失败:`, error)
         bank.progress = 0
-      })
+        bank.completed_count = 0
+        bank.chapterProgress = []
+      }
     }
   } catch (error) {
     console.error('获取题库列表失败:', error)
@@ -400,35 +491,124 @@ const applyFilter = () => {
   filterPopup.value.close()
 }
 
-// 开始考试
-const startExam = (bank) => {
-  // 判断是否有学习进度（只要 current_question_index > 0 就算有进度）
-  const hasProgress = bank.current_question_index > 0 && bank.current_question_index < bank.total_questions
-  
-  let title = '开始练习'
-  let content = `准备开始「${bank.bank_name}」练习\n共 ${bank.total_questions} 道题目`
-  let confirmText = '开始'
-  
-  if (hasProgress) {
-    title = '继续学习'
-    content = `「${bank.bank_name}」\n\n上次学习到第 ${bank.current_question_index + 1} 题\n进度：${bank.progress}%\n已完成：${bank.completed_count} 题\n\n是否继续学习？`
-    confirmText = '继续'
+// 获取进度显示文本
+const getProgressText = (bank) => {
+  if (!bank.current_chapter_id || bank.current_question_number === 0) {
+    return '尚未开始'
   }
   
-  uni.showModal({
-    title: title,
-    content: content,
-    confirmText: confirmText,
-    cancelText: '取消',
-    success: (res) => {
-      if (res.confirm) {
-        // 跳转到答题页面
-        uni.navigateTo({
-          url: `/pages/exam/exam?bankId=${bank.bank_id}&resultId=${bank.id}`
-        })
+  const chapter = bank.chapters?.find(c => c.id === bank.current_chapter_id)
+  if (chapter) {
+    return `${chapter.chapter_name}: 第${bank.current_question_number}题`
+  }
+  
+  return `已完成 ${bank.completed_count} 题`
+}
+
+// 开始考试 - 显示模式选择
+const startExam = (bank) => {
+  if (!bank.chapters || bank.chapters.length === 0) {
+    uni.showToast({
+      title: '该题库暂无章节',
+      icon: 'none'
+    })
+    return
+  }
+  
+  selectedBank.value = bank
+  modePopup.value.open()
+}
+
+// 开始章节练习
+const startChapterPractice = () => {
+  modePopup.value.close()
+  chapterSelectPopup.value.open()
+}
+
+// 开始整卷练习
+const startFullPractice = () => {
+  modePopup.value.close()
+  
+  const bank = selectedBank.value
+  let startChapterId = bank.current_chapter_id || bank.chapters[0]?.id
+  let startQuestionNumber = 1
+  
+  // 如果有进度，询问是否继续
+  if (bank.current_chapter_id && bank.current_question_number > 0) {
+    const chapterName = getChapterName(bank, bank.current_chapter_id)
+    uni.showModal({
+      title: '继续练习',
+      content: `上次学习到「${chapterName}」第${bank.current_question_number}题\n\n是否继续？`,
+      confirmText: '继续',
+      cancelText: '从头开始',
+      success: (res) => {
+        if (res.confirm) {
+          startChapterId = bank.current_chapter_id
+          startQuestionNumber = bank.current_question_number
+        } else {
+          startChapterId = bank.chapters[0]?.id
+          startQuestionNumber = 1
+        }
+        navigateToExam('full', startChapterId, startQuestionNumber)
       }
-    }
+    })
+  } else {
+    navigateToExam('full', startChapterId, startQuestionNumber)
+  }
+}
+
+// 选择章节后开始
+const selectChapterAndStart = (chapter) => {
+  chapterSelectPopup.value.close()
+  
+  const bank = selectedBank.value
+  const chapterProgress = bank.chapterProgress?.find(cp => cp.chapter_id === chapter.id)
+  
+  let startQuestionNumber = 1
+  
+  if (chapterProgress && chapterProgress.current_question_number > 0) {
+    uni.showModal({
+      title: '继续练习',
+      content: `「${chapter.chapter_name}」\n\n上次学习到第${chapterProgress.current_question_number}题\n进度：${chapterProgress.progress_percentage}%\n\n是否继续？`,
+      confirmText: '继续',
+      cancelText: '从头开始',
+      success: (res) => {
+        if (res.confirm) {
+          startQuestionNumber = chapterProgress.current_question_number
+        }
+        navigateToExam('chapter', chapter.id, startQuestionNumber)
+      }
+    })
+  } else {
+    navigateToExam('chapter', chapter.id, startQuestionNumber)
+  }
+}
+
+// 跳转到答题页
+const navigateToExam = (mode, chapterId, questionNumber = 1) => {
+  const bank = selectedBank.value
+  uni.navigateTo({
+    url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}`
   })
+}
+
+// 获取章节名称
+const getChapterName = (bank, chapterId) => {
+  const chapter = bank.chapters?.find(c => c.id === chapterId)
+  return chapter ? chapter.chapter_name : ''
+}
+
+// 获取章节进度文本
+const getChapterProgressText = (chapter) => {
+  if (!selectedBank.value) return '未开始'
+  
+  const progress = selectedBank.value.chapterProgress?.find(cp => cp.chapter_id === chapter.id)
+  
+  if (!progress || progress.current_question_number === 0) {
+    return '未开始'
+  }
+  
+  return `${progress.progress_percentage}%`
 }
 
 // 显示更多操作
@@ -460,7 +640,7 @@ const resetBankProgress = () => {
   
   uni.showModal({
     title: '重置学习进度',
-    content: `确定要重置「${bank.bank_name}」的学习进度吗？\n\n当前进度：${bank.progress}%\n已完成：${bank.completed_count} 题\n\n重置后将从第一题重新开始，此操作不可恢复。`,
+    content: `确定要重置「${bank.bank_name}」的所有章节学习进度吗？\n\n当前整体进度：${bank.progress}%\n已完成：${bank.completed_count} 题\n\n重置后将从第一题重新开始，此操作不可恢复。`,
     confirmText: '重置',
     confirmColor: '#ff9500',
     cancelText: '取消',
@@ -469,8 +649,8 @@ const resetBankProgress = () => {
         try {
           uni.showLoading({ title: '重置中...' })
           
-          // 调用重置接口
-          await del(`/user-progress/${bank.bank_id}`)
+          // 删除该题库所有章节的进度
+          await del(`/user-progress/${bank.id}`)
           
           // 刷新列表
           await fetchBankList()
@@ -958,6 +1138,113 @@ const goToUpload = () => {
 .action-text {
   font-size: 30rpx;
   color: #333;
+}
+
+/* 练习模式选择弹窗 */
+.mode-popup {
+  width: 600rpx;
+  background: white;
+  border-radius: 24rpx;
+  padding: 32rpx;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 32rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-radius: 16rpx;
+  border: 2rpx solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.mode-card:active {
+  transform: scale(0.98);
+  border-color: #667eea;
+}
+
+.mode-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 16rpx;
+}
+
+.mode-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+/* 章节选择弹窗 */
+.chapter-select-content {
+  background: white;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.chapter-list {
+  flex: 1;
+  margin-top: 24rpx;
+  max-height: 600rpx;
+}
+
+.chapter-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 24rpx;
+  background: #f5f7fa;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  transition: all 0.3s ease;
+}
+
+.chapter-item:active {
+  transform: scale(0.98);
+  background: #e3f2fd;
+}
+
+.chapter-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.chapter-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.chapter-count {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.chapter-progress {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.progress-percent {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: 600;
 }
 </style>
 
