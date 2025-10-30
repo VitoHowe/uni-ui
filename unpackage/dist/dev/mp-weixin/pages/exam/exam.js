@@ -1,6 +1,8 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const utils_request = require("../../utils/request.js");
+const utils_imageParser = require("../../utils/imageParser.js");
+const utils_constants = require("../../utils/constants.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
   const _easycom_uni_popup2 = common_vendor.resolveComponent("uni-popup");
@@ -96,6 +98,24 @@ const _sfc_main = {
         return false;
       return userAnswer.value === formatAnswer(currentQuestion.value.answer);
     });
+    const parsedContent = common_vendor.computed(() => {
+      if (!currentQuestion.value || !currentQuestion.value.content)
+        return "";
+      const baseUrl = utils_constants.API_CONFIG.BASE_URL.replace("/api", "");
+      return utils_imageParser.parseQuestionImages(currentQuestion.value.content, bankId.value, baseUrl);
+    });
+    const parsedExplanation = common_vendor.computed(() => {
+      if (!currentQuestion.value || !currentQuestion.value.explanation)
+        return "";
+      const baseUrl = utils_constants.API_CONFIG.BASE_URL.replace("/api", "");
+      return utils_imageParser.parseQuestionImages(currentQuestion.value.explanation, bankId.value, baseUrl);
+    });
+    const currentImageUrls = common_vendor.computed(() => {
+      if (!currentQuestion.value)
+        return [];
+      const baseUrl = utils_constants.API_CONFIG.BASE_URL.replace("/api", "");
+      return utils_imageParser.extractAllQuestionImages(currentQuestion.value, bankId.value, baseUrl);
+    });
     common_vendor.onMounted(async () => {
       const pages = getCurrentPages();
       const currentPage = pages[pages.length - 1];
@@ -127,20 +147,20 @@ const _sfc_main = {
     const initExam = async () => {
       loading.value = true;
       try {
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:390", "📖 开始初始化考试，参数:", {
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:416", "📖 开始初始化考试，参数:", {
           bankId: bankId.value,
           mode: practiceMode.value,
           chapterId: startChapterId.value,
           questionNumber: startQuestionNumber.value
         });
         const bankData = await utils_request.get(`/questions/banks/${bankId.value}`, {}, { showLoading: false });
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:399", "✅ 题库信息:", bankData);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:425", "✅ 题库信息:", bankData);
         bankInfo.value = {
           bank_name: bankData.name || "题库",
           total_questions: bankData.question_count || 0
         };
         const chaptersData = await utils_request.get(`/question-banks/${bankId.value}/chapters`, {}, { showLoading: false });
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:408", "✅ 章节列表:", chaptersData);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:434", "✅ 章节列表:", chaptersData);
         chapters.value = chaptersData.chapters || [];
         if (chapters.value.length === 0) {
           common_vendor.index.showToast({ title: "该题库暂无章节", icon: "none" });
@@ -150,19 +170,19 @@ const _sfc_main = {
         if (startChapterId.value) {
           const index = chapters.value.findIndex((c) => c.id === startChapterId.value);
           currentChapterIndex.value = index >= 0 ? index : 0;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:422", `📍 找到起始章节，索引: ${currentChapterIndex.value}`);
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:448", `📍 找到起始章节，索引: ${currentChapterIndex.value}`);
         } else {
           currentChapterIndex.value = 0;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:425", "📍 使用第一个章节");
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:451", "📍 使用第一个章节");
         }
         currentChapter.value = chapters.value[currentChapterIndex.value];
         currentQuestionNumber.value = startQuestionNumber.value;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:431", "📍 当前章节:", currentChapter.value);
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:432", "📍 起始题号:", currentQuestionNumber.value);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:457", "📍 当前章节:", currentChapter.value);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:458", "📍 起始题号:", currentQuestionNumber.value);
         await loadQuestion();
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:437", `✅ 初始化完成，开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:463", `✅ 初始化完成，开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:440", "❌ 初始化失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:466", "❌ 初始化失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
@@ -170,24 +190,24 @@ const _sfc_main = {
         setTimeout(() => common_vendor.index.navigateBack(), 1500);
       } finally {
         loading.value = false;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:448", "✅ 初始化loading状态已重置");
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:474", "✅ 初始化loading状态已重置");
       }
     };
     const loadQuestion = async () => {
       if (!currentChapter.value) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:455", "❌ currentChapter is null");
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:481", "❌ currentChapter is null");
         return;
       }
       loading.value = true;
       try {
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:461", `📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:487", `📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`);
         const response = await utils_request.get(
           `/question-banks/${bankId.value}/chapters/${currentChapter.value.id}/questions`,
           { questionNumber: currentQuestionNumber.value },
           { showLoading: false }
           // 使用组件自己的loading状态，不显示系统加载提示
         );
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:469", "📡 题目数据响应:", response);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:495", "📡 题目数据响应:", response);
         if (response && response.question) {
           currentQuestion.value = response.question;
           totalInChapter.value = response.total || 0;
@@ -205,9 +225,9 @@ const _sfc_main = {
           const cacheKey = getAnswerKey();
           questionCache.value[cacheKey] = response.question;
           showAnswer.value = false;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:495", `✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:521", `✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
         } else {
-          common_vendor.index.__f__("warn", "at pages/exam/exam.vue:497", "⚠️ 响应中没有question字段:", response);
+          common_vendor.index.__f__("warn", "at pages/exam/exam.vue:523", "⚠️ 响应中没有question字段:", response);
           if (practiceMode.value === "full" && canSwitchToNextChapter()) {
             await switchToNextChapter();
           } else {
@@ -215,14 +235,14 @@ const _sfc_main = {
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:507", "❌ 加载题目失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:533", "❌ 加载题目失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
         });
       } finally {
         loading.value = false;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:514", "✅ loading状态已重置为false");
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:540", "✅ loading状态已重置为false");
       }
     };
     const canSwitchToNextChapter = () => {
@@ -392,7 +412,7 @@ const _sfc_main = {
             },
             { showLoading: false }
           );
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:755", "💾 章节进度已保存:", {
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:781", "💾 章节进度已保存:", {
             mode: "chapter",
             chapter: currentChapter.value.chapter_name,
             questionNumber: currentQuestionNumber.value,
@@ -415,7 +435,7 @@ const _sfc_main = {
             },
             { showLoading: false }
           );
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:782", "💾 整卷进度已保存:", {
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:808", "💾 整卷进度已保存:", {
             mode: "full",
             chapter: currentChapter.value.chapter_name,
             chapterQuestionNumber: currentQuestionNumber.value,
@@ -424,7 +444,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:791", "保存进度失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:817", "保存进度失败:", error);
       }
     };
     const resetProgress = async () => {
@@ -452,10 +472,10 @@ const _sfc_main = {
                 title: "已重新开始",
                 icon: "success"
               });
-              common_vendor.index.__f__("log", "at pages/exam/exam.vue:831", "🔄 学习进度已重置");
+              common_vendor.index.__f__("log", "at pages/exam/exam.vue:857", "🔄 学习进度已重置");
             } catch (error) {
               common_vendor.index.hideLoading();
-              common_vendor.index.__f__("error", "at pages/exam/exam.vue:834", "重置进度失败:", error);
+              common_vendor.index.__f__("error", "at pages/exam/exam.vue:860", "重置进度失败:", error);
               common_vendor.index.showToast({
                 title: error.message || "重置失败",
                 icon: "none"
@@ -494,6 +514,14 @@ const _sfc_main = {
           }
         }
       });
+    };
+    const handleImageClick = () => {
+      if (currentImageUrls.value.length > 0) {
+        common_vendor.index.previewImage({
+          urls: currentImageUrls.value,
+          current: 0
+        });
+      }
     };
     return (_ctx, _cache) => {
       return common_vendor.e({
@@ -535,17 +563,18 @@ const _sfc_main = {
           };
         }),
         o: common_vendor.t(currentQuestionNumber.value),
-        p: common_vendor.t(currentQuestion.value.content),
-        q: currentQuestion.value.tags && currentQuestion.value.tags.length > 0
+        p: parsedContent.value,
+        q: common_vendor.o(handleImageClick),
+        r: currentQuestion.value.tags && currentQuestion.value.tags.length > 0
       }, currentQuestion.value.tags && currentQuestion.value.tags.length > 0 ? {
-        r: common_vendor.f(currentQuestion.value.tags, (tag, index, i0) => {
+        s: common_vendor.f(currentQuestion.value.tags, (tag, index, i0) => {
           return {
             a: common_vendor.t(tag),
             b: index
           };
         })
       } : {}, {
-        s: common_vendor.f(currentQuestion.value.options, (option, index, i0) => {
+        t: common_vendor.f(currentQuestion.value.options, (option, index, i0) => {
           return common_vendor.e({
             a: common_vendor.t(getOptionLabel(index)),
             b: common_vendor.t(option),
@@ -574,75 +603,79 @@ const _sfc_main = {
             n: common_vendor.o(($event) => selectOption(index), index)
           });
         }),
-        t: showAnswer.value ? 1 : "",
-        v: showAnswer.value
-      }, showAnswer.value ? {
-        w: common_vendor.p({
+        v: showAnswer.value ? 1 : "",
+        w: showAnswer.value
+      }, showAnswer.value ? common_vendor.e({
+        x: common_vendor.p({
           type: "info",
           size: "20",
           color: "#667eea"
         }),
-        x: common_vendor.t(formatAnswer(currentQuestion.value.answer)),
-        y: common_vendor.t(userAnswer.value || "未作答"),
-        z: common_vendor.n(isAnswerCorrect.value ? "correct" : "wrong"),
-        A: common_vendor.t(currentQuestion.value.explanation || "暂无解析")
+        y: common_vendor.t(formatAnswer(currentQuestion.value.answer)),
+        z: common_vendor.t(userAnswer.value || "未作答"),
+        A: common_vendor.n(isAnswerCorrect.value ? "correct" : "wrong"),
+        B: currentQuestion.value.explanation
+      }, currentQuestion.value.explanation ? {
+        C: parsedExplanation.value
       } : {}, {
-        B: common_vendor.p({
+        D: common_vendor.o(handleImageClick)
+      }) : {}, {
+        E: common_vendor.p({
           type: "back",
           size: "16",
           color: "#fff"
         }),
-        C: !hasPrevQuestion.value && (practiceMode.value === "chapter" || !canSwitchToPrevChapter()),
-        D: common_vendor.o(prevQuestion),
-        E: !showAnswer.value
+        F: !hasPrevQuestion.value && (practiceMode.value === "chapter" || !canSwitchToPrevChapter()),
+        G: common_vendor.o(prevQuestion),
+        H: !showAnswer.value
       }, !showAnswer.value ? {
-        F: common_vendor.p({
+        I: common_vendor.p({
           type: "eye",
           size: "16",
           color: "#fff"
         }),
-        G: common_vendor.o(toggleAnswer)
+        J: common_vendor.o(toggleAnswer)
       } : {
-        H: common_vendor.p({
+        K: common_vendor.p({
           type: "eye-slash",
           size: "16",
           color: "#fff"
         }),
-        I: common_vendor.o(toggleAnswer)
+        L: common_vendor.o(toggleAnswer)
       }, {
-        J: hasNextQuestion.value || practiceMode.value === "full" && canSwitchToNextChapter()
+        M: hasNextQuestion.value || practiceMode.value === "full" && canSwitchToNextChapter()
       }, hasNextQuestion.value || practiceMode.value === "full" && canSwitchToNextChapter() ? {
-        K: common_vendor.p({
+        N: common_vendor.p({
           type: "forward",
           size: "16",
           color: "#fff"
         }),
-        L: common_vendor.o(nextQuestion)
+        O: common_vendor.o(nextQuestion)
       } : {
-        M: common_vendor.p({
+        P: common_vendor.p({
           type: "checkmarkempty",
           size: "16",
           color: "#fff"
         }),
-        N: common_vendor.o(finishExam)
+        Q: common_vendor.o(finishExam)
       }) : {}, {
         k: currentQuestion.value,
-        O: common_vendor.p({
+        R: common_vendor.p({
           type: "closeempty",
           size: "20",
           color: "#999"
         }),
-        P: common_vendor.o(closeStats),
-        Q: common_vendor.t(answeredCount.value),
-        R: common_vendor.t(correctCount.value),
-        S: common_vendor.t(wrongCount.value),
-        T: common_vendor.t(accuracy.value),
-        U: common_vendor.o(resetProgress),
-        V: common_vendor.o(closeStats),
-        W: common_vendor.sr(statsPopup, "970fed46-12", {
+        S: common_vendor.o(closeStats),
+        T: common_vendor.t(answeredCount.value),
+        U: common_vendor.t(correctCount.value),
+        V: common_vendor.t(wrongCount.value),
+        W: common_vendor.t(accuracy.value),
+        X: common_vendor.o(resetProgress),
+        Y: common_vendor.o(closeStats),
+        Z: common_vendor.sr(statsPopup, "970fed46-12", {
           "k": "statsPopup"
         }),
-        X: common_vendor.p({
+        aa: common_vendor.p({
           type: "center"
         })
       });

@@ -51,8 +51,8 @@
           <text>题号 {{ currentQuestionNumber }}</text>
         </view>
 
-        <view class="question-text">
-          <text>{{ currentQuestion.content }}</text>
+        <view class="question-text" @click="handleImageClick">
+          <rich-text :nodes="parsedContent"></rich-text>
         </view>
 
         <!-- 标签 -->
@@ -121,9 +121,12 @@
               {{ userAnswer || '未作答' }}
             </text>
           </view>
-          <view class="explanation">
+          <view class="explanation" @click="handleImageClick">
             <text class="explanation-label">解析：</text>
-            <text class="explanation-text">{{ currentQuestion.explanation || '暂无解析' }}</text>
+            <view class="explanation-text">
+              <rich-text v-if="currentQuestion.explanation" :nodes="parsedExplanation"></rich-text>
+              <text v-else style="color:#999;">暂无解析</text>
+            </view>
           </view>
         </view>
       </view>
@@ -223,6 +226,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { get, post, del } from '@/utils/request.js'
+import { parseQuestionImages, extractAllQuestionImages } from '@/utils/imageParser.js'
+import { API_CONFIG } from '@/utils/constants.js'
 
 // 页面参数
 const bankId = ref(0)
@@ -340,6 +345,27 @@ const accuracy = computed(() => {
 const isAnswerCorrect = computed(() => {
   if (!userAnswer.value) return false
   return userAnswer.value === formatAnswer(currentQuestion.value.answer)
+})
+
+// 解析后的题目内容（包含图片）
+const parsedContent = computed(() => {
+  if (!currentQuestion.value || !currentQuestion.value.content) return ''
+  const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
+  return parseQuestionImages(currentQuestion.value.content, bankId.value, baseUrl)
+})
+
+// 解析后的答案解析（包含图片）
+const parsedExplanation = computed(() => {
+  if (!currentQuestion.value || !currentQuestion.value.explanation) return ''
+  const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
+  return parseQuestionImages(currentQuestion.value.explanation, bankId.value, baseUrl)
+})
+
+// 获取当前题目所有图片URL（用于预览）
+const currentImageUrls = computed(() => {
+  if (!currentQuestion.value) return []
+  const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
+  return extractAllQuestionImages(currentQuestion.value, bankId.value, baseUrl)
 })
 
 // 页面加载
@@ -878,6 +904,16 @@ const handleBack = () => {
     }
   })
 }
+
+// 处理图片点击事件（预览图片）
+const handleImageClick = () => {
+  if (currentImageUrls.value.length > 0) {
+    uni.previewImage({
+      urls: currentImageUrls.value,
+      current: 0
+    })
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1056,6 +1092,27 @@ const handleBack = () => {
   font-weight: 500;
 }
 
+/* 题目内容中的图片样式 */
+.question-text ::v-deep img,
+.question-text ::v-deep image {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 12rpx;
+  margin: 24rpx 0;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+  display: block;
+  background: #f5f7fa;
+  border: 2rpx solid #e8eaed;
+  transition: all 0.3s ease;
+}
+
+.question-text ::v-deep img:active,
+.question-text ::v-deep image:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
 .question-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1230,6 +1287,27 @@ const handleBack = () => {
   font-size: 25rpx;
   line-height: 1.7;
   color: #666;
+}
+
+/* 解析内容中的图片样式 */
+.explanation ::v-deep img,
+.explanation ::v-deep image {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 10rpx;
+  margin: 16rpx 0;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
+  display: block;
+  background: #fafafa;
+  border: 1rpx solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.explanation ::v-deep img:active,
+.explanation ::v-deep image:active {
+  transform: scale(0.98);
+  box-shadow: 0 1rpx 6rpx rgba(0, 0, 0, 0.06);
 }
 
 /* 操作按钮 */
