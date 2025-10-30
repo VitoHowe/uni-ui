@@ -125,15 +125,22 @@ const _sfc_main = {
       }
     });
     const initExam = async () => {
-      var _a;
       loading.value = true;
       try {
-        const bankData = await utils_request.get(`/questions/banks/${bankId.value}`);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:390", "📖 开始初始化考试，参数:", {
+          bankId: bankId.value,
+          mode: practiceMode.value,
+          chapterId: startChapterId.value,
+          questionNumber: startQuestionNumber.value
+        });
+        const bankData = await utils_request.get(`/questions/banks/${bankId.value}`, {}, { showLoading: false });
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:399", "✅ 题库信息:", bankData);
         bankInfo.value = {
           bank_name: bankData.name || "题库",
-          total_questions: ((_a = bankData.stats) == null ? void 0 : _a.total_questions) || 0
+          total_questions: bankData.question_count || 0
         };
-        const chaptersData = await utils_request.get(`/question-banks/${bankId.value}/chapters`);
+        const chaptersData = await utils_request.get(`/question-banks/${bankId.value}/chapters`, {}, { showLoading: false });
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:408", "✅ 章节列表:", chaptersData);
         chapters.value = chaptersData.chapters || [];
         if (chapters.value.length === 0) {
           common_vendor.index.showToast({ title: "该题库暂无章节", icon: "none" });
@@ -143,18 +150,19 @@ const _sfc_main = {
         if (startChapterId.value) {
           const index = chapters.value.findIndex((c) => c.id === startChapterId.value);
           currentChapterIndex.value = index >= 0 ? index : 0;
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:422", `📍 找到起始章节，索引: ${currentChapterIndex.value}`);
         } else {
           currentChapterIndex.value = 0;
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:425", "📍 使用第一个章节");
         }
         currentChapter.value = chapters.value[currentChapterIndex.value];
         currentQuestionNumber.value = startQuestionNumber.value;
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:431", "📍 当前章节:", currentChapter.value);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:432", "📍 起始题号:", currentQuestionNumber.value);
         await loadQuestion();
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:421", `📖 开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`, {
-          chapter: currentChapter.value.chapter_name,
-          questionNumber: currentQuestionNumber.value
-        });
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:437", `✅ 初始化完成，开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:427", "初始化失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:440", "❌ 初始化失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
@@ -162,27 +170,44 @@ const _sfc_main = {
         setTimeout(() => common_vendor.index.navigateBack(), 1500);
       } finally {
         loading.value = false;
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:448", "✅ 初始化loading状态已重置");
       }
     };
     const loadQuestion = async () => {
-      if (!currentChapter.value)
+      if (!currentChapter.value) {
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:455", "❌ currentChapter is null");
         return;
+      }
       loading.value = true;
       try {
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:461", `📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`);
         const response = await utils_request.get(
           `/question-banks/${bankId.value}/chapters/${currentChapter.value.id}/questions`,
-          { questionNumber: currentQuestionNumber.value }
+          { questionNumber: currentQuestionNumber.value },
+          { showLoading: false }
+          // 使用组件自己的loading状态，不显示系统加载提示
         );
-        if (response.question) {
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:469", "📡 题目数据响应:", response);
+        if (response && response.question) {
           currentQuestion.value = response.question;
-          totalInChapter.value = response.total;
-          hasNextQuestion.value = response.hasNext;
-          hasPrevQuestion.value = response.hasPrev;
+          totalInChapter.value = response.total || 0;
+          hasNextQuestion.value = response.hasNext || false;
+          hasPrevQuestion.value = response.hasPrev || false;
+          if (practiceMode.value === "full" && chapters.value.length > 0) {
+            let totalCount = 0;
+            chapters.value.forEach((chapter) => {
+              totalCount += chapter.question_count || 0;
+            });
+            if (totalCount > 0) {
+              bankInfo.value.total_questions = totalCount;
+            }
+          }
           const cacheKey = getAnswerKey();
           questionCache.value[cacheKey] = response.question;
           showAnswer.value = false;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:462", `📖 加载题目: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:495", `✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
         } else {
+          common_vendor.index.__f__("warn", "at pages/exam/exam.vue:497", "⚠️ 响应中没有question字段:", response);
           if (practiceMode.value === "full" && canSwitchToNextChapter()) {
             await switchToNextChapter();
           } else {
@@ -190,13 +215,14 @@ const _sfc_main = {
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:473", "加载题目失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:507", "❌ 加载题目失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
         });
       } finally {
         loading.value = false;
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:514", "✅ loading状态已重置为false");
       }
     };
     const canSwitchToNextChapter = () => {
@@ -247,7 +273,8 @@ const _sfc_main = {
       return answer.toString().toUpperCase();
     };
     const isOptionSelected = (optionIndex) => {
-      const answer = userAnswers.value[currentIndex.value];
+      const key = getAnswerKey();
+      const answer = userAnswers.value[key];
       if (!answer)
         return false;
       const label = getOptionLabel(optionIndex);
@@ -309,7 +336,6 @@ const _sfc_main = {
       }
     };
     const nextQuestion = async () => {
-      await saveProgress();
       if (hasNextQuestion.value) {
         currentQuestionNumber.value++;
         await loadQuestion();
@@ -355,29 +381,51 @@ const _sfc_main = {
       if (!bankId.value || !currentChapter.value)
         return;
       try {
-        const chapterAnsweredCount = getChapterAnsweredCount(currentChapter.value.id);
-        await utils_request.post(
-          `/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`,
-          {
-            current_question_number: currentQuestionNumber.value,
-            completed_count: chapterAnsweredCount,
-            total_questions: totalInChapter.value
-          },
-          { showLoading: false }
-        );
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:722", "💾 进度已保存:", {
-          chapter: currentChapter.value.chapter_name,
-          questionNumber: currentQuestionNumber.value,
-          answered: chapterAnsweredCount,
-          total: totalInChapter.value
-        });
+        if (practiceMode.value === "chapter") {
+          await utils_request.post(
+            `/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`,
+            {
+              practice_mode: "chapter",
+              current_question_number: currentQuestionNumber.value,
+              completed_count: currentQuestionNumber.value,
+              total_questions: totalInChapter.value
+            },
+            { showLoading: false }
+          );
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:755", "💾 章节进度已保存:", {
+            mode: "chapter",
+            chapter: currentChapter.value.chapter_name,
+            questionNumber: currentQuestionNumber.value,
+            completedCount: currentQuestionNumber.value,
+            total: totalInChapter.value
+          });
+        } else {
+          let totalCompleted = currentQuestionNumber.value;
+          for (let i = 0; i < currentChapterIndex.value; i++) {
+            totalCompleted += chapters.value[i].question_count || 0;
+          }
+          await utils_request.post(
+            `/user-progress/${bankId.value}/chapters/0`,
+            {
+              practice_mode: "full",
+              current_chapter_id: currentChapter.value.id,
+              current_question_number: currentQuestionNumber.value,
+              completed_count: totalCompleted,
+              total_questions: bankInfo.value.total_questions
+            },
+            { showLoading: false }
+          );
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:782", "💾 整卷进度已保存:", {
+            mode: "full",
+            chapter: currentChapter.value.chapter_name,
+            chapterQuestionNumber: currentQuestionNumber.value,
+            totalCompleted,
+            total: bankInfo.value.total_questions
+          });
+        }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:729", "保存进度失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:791", "保存进度失败:", error);
       }
-    };
-    const getChapterAnsweredCount = (chapterId) => {
-      const prefix = `${chapterId}_`;
-      return Object.keys(userAnswers.value).filter((key) => key.startsWith(prefix)).length;
     };
     const resetProgress = async () => {
       common_vendor.index.showModal({
@@ -404,10 +452,10 @@ const _sfc_main = {
                 title: "已重新开始",
                 icon: "success"
               });
-              common_vendor.index.__f__("log", "at pages/exam/exam.vue:775", "🔄 学习进度已重置");
+              common_vendor.index.__f__("log", "at pages/exam/exam.vue:831", "🔄 学习进度已重置");
             } catch (error) {
               common_vendor.index.hideLoading();
-              common_vendor.index.__f__("error", "at pages/exam/exam.vue:778", "重置进度失败:", error);
+              common_vendor.index.__f__("error", "at pages/exam/exam.vue:834", "重置进度失败:", error);
               common_vendor.index.showToast({
                 title: error.message || "重置失败",
                 icon: "none"
@@ -486,7 +534,7 @@ const _sfc_main = {
             })
           };
         }),
-        o: common_vendor.t(_ctx.currentIndex + 1),
+        o: common_vendor.t(currentQuestionNumber.value),
         p: common_vendor.t(currentQuestion.value.content),
         q: currentQuestion.value.tags && currentQuestion.value.tags.length > 0
       }, currentQuestion.value.tags && currentQuestion.value.tags.length > 0 ? {
@@ -541,7 +589,7 @@ const _sfc_main = {
       } : {}, {
         B: common_vendor.p({
           type: "back",
-          size: "18",
+          size: "16",
           color: "#fff"
         }),
         C: !hasPrevQuestion.value && (practiceMode.value === "chapter" || !canSwitchToPrevChapter()),
@@ -550,14 +598,14 @@ const _sfc_main = {
       }, !showAnswer.value ? {
         F: common_vendor.p({
           type: "eye",
-          size: "18",
+          size: "16",
           color: "#fff"
         }),
         G: common_vendor.o(toggleAnswer)
       } : {
         H: common_vendor.p({
           type: "eye-slash",
-          size: "18",
+          size: "16",
           color: "#fff"
         }),
         I: common_vendor.o(toggleAnswer)
@@ -566,14 +614,14 @@ const _sfc_main = {
       }, hasNextQuestion.value || practiceMode.value === "full" && canSwitchToNextChapter() ? {
         K: common_vendor.p({
           type: "forward",
-          size: "18",
+          size: "16",
           color: "#fff"
         }),
         L: common_vendor.o(nextQuestion)
       } : {
         M: common_vendor.p({
           type: "checkmarkempty",
-          size: "18",
+          size: "16",
           color: "#fff"
         }),
         N: common_vendor.o(finishExam)

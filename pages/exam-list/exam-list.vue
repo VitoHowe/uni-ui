@@ -125,7 +125,7 @@
           <view class="card-footer">
             <view class="footer-btn primary" @click.stop="startExam(bank)">
               <uni-icons type="forward" size="16" color="#fff" />
-              <text class="btn-text">{{ (bank.current_question_index > 0) ? '继续学习' : '开始练习' }}</text>
+              <text class="btn-text">{{ (bank.completed_count > 0) ? '继续学习' : '开始练习' }}</text>
             </view>
           </view>
         </view>
@@ -168,7 +168,7 @@
           <text class="action-text">分享题库</text>
         </view>
         <view 
-          v-if="selectedBank && selectedBank.current_question_index > 0" 
+          v-if="selectedBank && selectedBank.completed_count > 0" 
           class="action-item danger" 
           @click="resetBankProgress"
         >
@@ -329,87 +329,42 @@ onShow(() => {
 const fetchBankList = async () => {
   loading.value = true
   try {
-    // 1. 获取题库列表（使用新的题库管理API）
+    // 1. 获取题库列表（使用优化后的API，包含study_progress）
     const response = await get('/questions/banks')
     const banks = response.banks || []
     
-    // 映射字段名称以兼容现有代码
-    bankList.value = banks.map(bank => ({
-      id: bank.id,
-      bank_id: bank.id, // 向后兼容
-      bank_name: bank.name,
-      file_name: bank.file_original_name,
-      total_questions: bank.question_count,
-      created_at: bank.created_at,
-      description: bank.description,
-      creator_name: bank.creator_name,
-      file_type: bank.file_type,
-      file_size: bank.file_size
-    }))
-    
-    // 2. 获取每个题库的章节信息
-    for (const bank of bankList.value) {
-      try {
-        const chaptersData = await get(`/question-banks/${bank.id}/chapters`)
-        bank.chapters = chaptersData.chapters || []
-        bank.totalChapters = chaptersData.totalChapters || 0
-      } catch (error) {
-        console.error(`获取题库${bank.id}章节失败:`, error)
-        bank.chapters = []
-        bank.totalChapters = 0
-      }
-    }
-    
-    // 3. 获取所有章节的学习进度（新的章节级别API）
-    for (const bank of bankList.value) {
-      try {
-        const progressData = await get(`/user-progress/${bank.id}/chapters`)
-        bank.chapterProgress = progressData || []
+    // 映射字段名称并使用study_progress字段
+    bankList.value = banks.map(bank => {
+      const studyProgress = bank.study_progress || {}
+      
+      return {
+        id: bank.id,
+        bank_id: bank.id, // 向后兼容
+        bank_name: bank.name,
+        file_name: bank.file_original_name,
+        total_questions: bank.question_count,
+        created_at: bank.created_at,
+        description: bank.description,
+        creator_name: bank.creator_name,
+        file_type: bank.file_type,
+        file_size: bank.file_size,
         
-        // 计算整体进度
-        if (bank.chapterProgress.length > 0) {
-          let totalCompleted = 0
-          let totalQuestions = 0
-          
-          bank.chapterProgress.forEach(cp => {
-            totalCompleted += cp.completed_count || 0
-            totalQuestions += cp.total_questions || 0
-          })
-          
-          bank.progress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0
-          bank.completed_count = totalCompleted
-          
-          // 找到最近学习的章节
-          const lastStudied = bank.chapterProgress.reduce((latest, current) => {
-            if (!latest.last_study_time) return current
-            if (!current.last_study_time) return latest
-            return new Date(current.last_study_time) > new Date(latest.last_study_time) ? current : latest
-          })
-          
-          bank.current_chapter_id = lastStudied.chapter_id
-          bank.current_question_number = lastStudied.current_question_number || 0
-          bank.last_study_time = lastStudied.last_study_time
-          
-          console.log(`题库 ${bank.bank_name} 进度:`, {
-            id: bank.id,
-            chapters: bank.chapterProgress.length,
-            completed: totalCompleted,
-            total: totalQuestions,
-            progress: bank.progress
-          })
-        } else {
-          bank.progress = 0
-          bank.completed_count = 0
-          bank.current_chapter_id = bank.chapters[0]?.id || null
-          bank.current_question_number = 0
-        }
-      } catch (error) {
-        console.error(`获取题库${bank.id}进度失败:`, error)
-        bank.progress = 0
-        bank.completed_count = 0
-        bank.chapterProgress = []
+        // 使用后端返回的study_progress字段
+        totalChapters: studyProgress.total_chapters || 0,
+        studiedChapters: studyProgress.studied_chapters || 0,
+        progress: studyProgress.progress_percentage || 0,
+        completed_count: studyProgress.completed_questions || 0,
+        last_study_time: studyProgress.last_study_time || null,
+        
+        // 章节信息和详细进度将在需要时按需加载
+        chapters: [],
+        chapterProgress: null, // 标记为未加载
+        current_chapter_id: null,
+        current_question_number: 0
       }
-    }
+    })
+    
+    console.log('✅ 题库列表加载完成，已使用study_progress优化接口调用')
   } catch (error) {
     console.error('获取题库列表失败:', error)
     uni.showToast({
@@ -493,68 +448,110 @@ const applyFilter = () => {
 
 // 获取进度显示文本
 const getProgressText = (bank) => {
-  if (!bank.current_chapter_id || bank.current_question_number === 0) {
+  if (!bank.last_study_time || bank.completed_count === 0) {
     return '尚未开始'
   }
   
-  const chapter = bank.chapters?.find(c => c.id === bank.current_chapter_id)
-  if (chapter) {
-    return `${chapter.chapter_name}: 第${bank.current_question_number}题`
-  }
-  
-  return `已完成 ${bank.completed_count} 题`
+  return `已学习 ${bank.studiedChapters}/${bank.totalChapters} 章节`
 }
 
-// 开始考试 - 显示模式选择
-const startExam = (bank) => {
+// 开始考试 - 显示模式选择（按需加载章节列表）
+const startExam = async (bank) => {
+  selectedBank.value = bank
+  
+  // 如果尚未加载章节列表，则加载
   if (!bank.chapters || bank.chapters.length === 0) {
-    uni.showToast({
-      title: '该题库暂无章节',
-      icon: 'none'
-    })
-    return
+    try {
+      uni.showLoading({ title: '加载章节信息...' })
+      const chaptersData = await get(`/question-banks/${bank.id}/chapters`)
+      bank.chapters = chaptersData.chapters || []
+      uni.hideLoading()
+      
+      if (bank.chapters.length === 0) {
+        uni.showToast({
+          title: '该题库暂无章节',
+          icon: 'none'
+        })
+        return
+      }
+    } catch (error) {
+      uni.hideLoading()
+      console.error(`获取题库${bank.id}章节失败:`, error)
+      uni.showToast({
+        title: '加载章节失败',
+        icon: 'none'
+      })
+      return
+    }
   }
   
-  selectedBank.value = bank
   modePopup.value.open()
 }
 
-// 开始章节练习
-const startChapterPractice = () => {
-  modePopup.value.close()
-  chapterSelectPopup.value.open()
-}
-
-// 开始整卷练习
-const startFullPractice = () => {
+// 开始章节练习（按需加载章节进度）
+const startChapterPractice = async () => {
   modePopup.value.close()
   
   const bank = selectedBank.value
-  let startChapterId = bank.current_chapter_id || bank.chapters[0]?.id
+  
+  // 如果尚未加载章节进度，则加载
+  if (bank.chapterProgress === null) {
+    try {
+      uni.showLoading({ title: '加载章节进度...' })
+      const progressData = await get(`/user-progress/${bank.id}/chapters`)
+      bank.chapterProgress = progressData || []
+      uni.hideLoading()
+    } catch (error) {
+      uni.hideLoading()
+      console.error(`获取题库${bank.id}章节进度失败:`, error)
+      bank.chapterProgress = []
+    }
+  }
+  
+  chapterSelectPopup.value.open()
+}
+
+// 开始整卷练习（查询整卷练习进度）
+const startFullPractice = async () => {
+  modePopup.value.close()
+  
+  const bank = selectedBank.value
+  let startChapterId = bank.chapters[0]?.id
   let startQuestionNumber = 1
   
-  // 如果有进度，询问是否继续
-  if (bank.current_chapter_id && bank.current_question_number > 0) {
-    const chapterName = getChapterName(bank, bank.current_chapter_id)
-    uni.showModal({
-      title: '继续练习',
-      content: `上次学习到「${chapterName}」第${bank.current_question_number}题\n\n是否继续？`,
-      confirmText: '继续',
-      cancelText: '从头开始',
-      success: (res) => {
-        if (res.confirm) {
-          startChapterId = bank.current_chapter_id
-          startQuestionNumber = bank.current_question_number
-        } else {
-          startChapterId = bank.chapters[0]?.id
-          startQuestionNumber = 1
+  try {
+    // 查询整卷练习进度
+    uni.showLoading({ title: '加载进度...' })
+    const fullProgress = await get(`/user-progress/${bank.id}/full`)
+    uni.hideLoading()
+    
+    // 如果有整卷练习进度，询问是否继续
+    if (fullProgress && fullProgress.current_question_number > 0) {
+      const chapterName = getChapterName(bank, fullProgress.current_chapter_id)
+      
+      uni.showModal({
+        title: '继续练习',
+        content: `上次学习到「${chapterName}」第${fullProgress.current_question_number}题\n整体进度：${Math.round((fullProgress.completed_count / bank.total_questions) * 100)}%\n\n是否继续？`,
+        confirmText: '继续',
+        cancelText: '从头开始',
+        success: (res) => {
+          if (res.confirm) {
+            startChapterId = fullProgress.current_chapter_id
+            startQuestionNumber = fullProgress.current_question_number
+          }
+          navigateToExam('full', startChapterId, startQuestionNumber)
         }
-        navigateToExam('full', startChapterId, startQuestionNumber)
-      }
-    })
-  } else {
-    navigateToExam('full', startChapterId, startQuestionNumber)
+      })
+      return
+    }
+  } catch (error) {
+    uni.hideLoading()
+    console.error(`获取整卷练习进度失败:`, error)
+    // 如果接口返回404或其他错误，说明没有进度，继续从头开始
   }
+  
+  // 没有整卷练习进度，直接从第一章开始
+  navigateToExam('full', startChapterId, startQuestionNumber)
 }
 
 // 选择章节后开始

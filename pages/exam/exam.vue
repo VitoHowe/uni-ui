@@ -48,7 +48,7 @@
         </view>
 
         <view class="question-number">
-          <text>第 {{ currentIndex + 1 }} 题</text>
+          <text>题号 {{ currentQuestionNumber }}</text>
         </view>
 
         <view class="question-text">
@@ -135,8 +135,8 @@
           :disabled="!hasPrevQuestion && (practiceMode === 'chapter' || !canSwitchToPrevChapter())"
           @click="prevQuestion"
         >
-          <uni-icons type="back" size="18" color="#fff" />
-          <text>上一题</text>
+          <uni-icons type="back" size="16" color="#fff" />
+          <text class="btn-text">上一题</text>
         </button>
 
         <button 
@@ -144,16 +144,16 @@
           class="action-btn primary show-answer"
           @click="toggleAnswer"
         >
-          <uni-icons type="eye" size="18" color="#fff" />
-          <text>显示答案</text>
+          <uni-icons type="eye" size="16" color="#fff" />
+          <text class="btn-text">查看答案</text>
         </button>
         <button 
           v-else
           class="action-btn primary hide-answer"
           @click="toggleAnswer"
         >
-          <uni-icons type="eye-slash" size="18" color="#fff" />
-          <text>隐藏答案</text>
+          <uni-icons type="eye-slash" size="16" color="#fff" />
+          <text class="btn-text">收起</text>
         </button>
 
         <button 
@@ -161,16 +161,16 @@
           class="action-btn secondary"
           @click="nextQuestion"
         >
-          <text>下一题</text>
-          <uni-icons type="forward" size="18" color="#fff" />
+          <text class="btn-text">下一题</text>
+          <uni-icons type="forward" size="16" color="#fff" />
         </button>
         <button 
           v-else
           class="action-btn finish"
           @click="finishExam"
         >
-          <uni-icons type="checkmarkempty" size="18" color="#fff" />
-          <text>完成</text>
+          <uni-icons type="checkmarkempty" size="16" color="#fff" />
+          <text class="btn-text">完成</text>
         </button>
       </view>
     </view>
@@ -387,15 +387,26 @@ watch([currentQuestionNumber, currentChapterIndex], ([newQuestionNum, newChapter
 const initExam = async () => {
   loading.value = true
   try {
+    console.log('📖 开始初始化考试，参数:', {
+      bankId: bankId.value,
+      mode: practiceMode.value,
+      chapterId: startChapterId.value,
+      questionNumber: startQuestionNumber.value
+    })
+    
     // 1. 获取题库基本信息（使用新的题库管理API）
-    const bankData = await get(`/questions/banks/${bankId.value}`)
+    const bankData = await get(`/questions/banks/${bankId.value}`, {}, { showLoading: false })
+    console.log('✅ 题库信息:', bankData)
+    
     bankInfo.value = {
       bank_name: bankData.name || '题库',
-      total_questions: bankData.stats?.total_questions || 0
+      total_questions: bankData.question_count || 0
     }
     
     // 2. 获取章节列表
-    const chaptersData = await get(`/question-banks/${bankId.value}/chapters`)
+    const chaptersData = await get(`/question-banks/${bankId.value}/chapters`, {}, { showLoading: false })
+    console.log('✅ 章节列表:', chaptersData)
+    
     chapters.value = chaptersData.chapters || []
     
     if (chapters.value.length === 0) {
@@ -408,23 +419,25 @@ const initExam = async () => {
     if (startChapterId.value) {
       const index = chapters.value.findIndex(c => c.id === startChapterId.value)
       currentChapterIndex.value = index >= 0 ? index : 0
+      console.log(`📍 找到起始章节，索引: ${currentChapterIndex.value}`)
     } else {
       currentChapterIndex.value = 0
+      console.log('📍 使用第一个章节')
     }
     
     currentChapter.value = chapters.value[currentChapterIndex.value]
     currentQuestionNumber.value = startQuestionNumber.value
     
+    console.log('📍 当前章节:', currentChapter.value)
+    console.log('📍 起始题号:', currentQuestionNumber.value)
+    
     // 4. 加载起始题目
     await loadQuestion()
     
-    console.log(`📖 开始${practiceMode.value === 'chapter' ? '章节' : '整卷'}练习`, {
-      chapter: currentChapter.value.chapter_name,
-      questionNumber: currentQuestionNumber.value
-    })
+    console.log(`✅ 初始化完成，开始${practiceMode.value === 'chapter' ? '章节' : '整卷'}练习`)
     
   } catch (error) {
-    console.error('初始化失败:', error)
+    console.error('❌ 初始化失败:', error)
     uni.showToast({
       title: error.message || '加载失败',
       icon: 'none'
@@ -432,25 +445,45 @@ const initExam = async () => {
     setTimeout(() => uni.navigateBack(), 1500)
   } finally {
     loading.value = false
+    console.log('✅ 初始化loading状态已重置')
   }
 }
 
 // 加载题目（单题模式）
 const loadQuestion = async () => {
-  if (!currentChapter.value) return
+  if (!currentChapter.value) {
+    console.error('❌ currentChapter is null')
+    return
+  }
   
   loading.value = true
   try {
+    console.log(`📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`)
+    
     const response = await get(
       `/question-banks/${bankId.value}/chapters/${currentChapter.value.id}/questions`,
-      { questionNumber: currentQuestionNumber.value }
+      { questionNumber: currentQuestionNumber.value },
+      { showLoading: false } // 使用组件自己的loading状态，不显示系统加载提示
     )
     
-    if (response.question) {
+    console.log('📡 题目数据响应:', response)
+    
+    if (response && response.question) {
       currentQuestion.value = response.question
-      totalInChapter.value = response.total
-      hasNextQuestion.value = response.hasNext
-      hasPrevQuestion.value = response.hasPrev
+      totalInChapter.value = response.total || 0
+      hasNextQuestion.value = response.hasNext || false
+      hasPrevQuestion.value = response.hasPrev || false
+      
+      // 更新题库总题数（整卷模式下累加所有章节题数）
+      if (practiceMode.value === 'full' && chapters.value.length > 0) {
+        let totalCount = 0
+        chapters.value.forEach(chapter => {
+          totalCount += chapter.question_count || 0
+        })
+        if (totalCount > 0) {
+          bankInfo.value.total_questions = totalCount
+        }
+      }
       
       // 缓存题目
       const cacheKey = getAnswerKey()
@@ -459,8 +492,9 @@ const loadQuestion = async () => {
       // 重置答案显示状态
       showAnswer.value = false
       
-      console.log(`📖 加载题目: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`)
+      console.log(`✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`)
     } else {
+      console.warn('⚠️ 响应中没有question字段:', response)
       // 没有更多题目了
       if (practiceMode.value === 'full' && canSwitchToNextChapter()) {
         // 整卷模式，自动切换到下一章节
@@ -470,13 +504,14 @@ const loadQuestion = async () => {
       }
     }
   } catch (error) {
-    console.error('加载题目失败:', error)
+    console.error('❌ 加载题目失败:', error)
     uni.showToast({
       title: error.message || '加载失败',
       icon: 'none'
     })
   } finally {
     loading.value = false
+    console.log('✅ loading状态已重置为false')
   }
 }
 
@@ -549,7 +584,8 @@ const formatAnswer = (answer) => {
 
 // 判断选项是否被选中
 const isOptionSelected = (optionIndex) => {
-  const answer = userAnswers.value[currentIndex.value]
+  const key = getAnswerKey()
+  const answer = userAnswers.value[key]
   if (!answer) return false
   
   const label = getOptionLabel(optionIndex)
@@ -639,9 +675,6 @@ const prevQuestion = async () => {
 
 // 下一题
 const nextQuestion = async () => {
-  // 保存当前进度
-  await saveProgress()
-  
   if (hasNextQuestion.value) {
     // 章节内有下一题
     currentQuestionNumber.value++
@@ -701,39 +734,62 @@ const closeStats = () => {
   statsPopup.value.close()
 }
 
-// 保存学习进度（章节级别）
+// 保存学习进度
 const saveProgress = async () => {
   if (!bankId.value || !currentChapter.value) return
   
   try {
-    // 获取当前章节的答题数
-    const chapterAnsweredCount = getChapterAnsweredCount(currentChapter.value.id)
-    
-    await post(
-      `/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`,
-      {
-        current_question_number: currentQuestionNumber.value,
-        completed_count: chapterAnsweredCount,
-        total_questions: totalInChapter.value
-      },
-      { showLoading: false }
-    )
-    
-    console.log('💾 进度已保存:', {
-      chapter: currentChapter.value.chapter_name,
-      questionNumber: currentQuestionNumber.value,
-      answered: chapterAnsweredCount,
-      total: totalInChapter.value
-    })
+    if (practiceMode.value === 'chapter') {
+      // 章节练习：保存到具体章节
+      await post(
+        `/user-progress/${bankId.value}/chapters/${currentChapter.value.id}`,
+        {
+          practice_mode: 'chapter',
+          current_question_number: currentQuestionNumber.value,
+          completed_count: currentQuestionNumber.value,
+          total_questions: totalInChapter.value
+        },
+        { showLoading: false }
+      )
+      
+      console.log('💾 章节进度已保存:', {
+        mode: 'chapter',
+        chapter: currentChapter.value.chapter_name,
+        questionNumber: currentQuestionNumber.value,
+        completedCount: currentQuestionNumber.value,
+        total: totalInChapter.value
+      })
+    } else {
+      // 整卷练习：保存到chapter_id=0，记录整体进度
+      // 计算整体完成的题目数（前面章节的题数 + 当前章节的题号）
+      let totalCompleted = currentQuestionNumber.value
+      for (let i = 0; i < currentChapterIndex.value; i++) {
+        totalCompleted += chapters.value[i].question_count || 0
+      }
+      
+      await post(
+        `/user-progress/${bankId.value}/chapters/0`,
+        {
+          practice_mode: 'full',
+          current_chapter_id: currentChapter.value.id,
+          current_question_number: currentQuestionNumber.value,
+          completed_count: totalCompleted,
+          total_questions: bankInfo.value.total_questions
+        },
+        { showLoading: false }
+      )
+      
+      console.log('💾 整卷进度已保存:', {
+        mode: 'full',
+        chapter: currentChapter.value.chapter_name,
+        chapterQuestionNumber: currentQuestionNumber.value,
+        totalCompleted: totalCompleted,
+        total: bankInfo.value.total_questions
+      })
+    }
   } catch (error) {
     console.error('保存进度失败:', error)
   }
-}
-
-// 获取某章节的答题数
-const getChapterAnsweredCount = (chapterId) => {
-  const prefix = `${chapterId}_`
-  return Object.keys(userAnswers.value).filter(key => key.startsWith(prefix)).length
 }
 
 // 重置学习进度
@@ -930,16 +986,18 @@ const handleBack = () => {
 
 /* 题目内容 */
 .question-content {
-  padding: 20rpx;
+  padding: 16rpx;
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* 题目卡片 */
 .question-card {
   background: white;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .question-header {
@@ -991,10 +1049,11 @@ const handleBack = () => {
 }
 
 .question-text {
-  font-size: 32rpx;
-  line-height: 1.8;
+  font-size: 30rpx;
+  line-height: 1.7;
   color: #333;
-  margin-bottom: 20rpx;
+  margin-bottom: 16rpx;
+  font-weight: 500;
 }
 
 .question-tags {
@@ -1018,19 +1077,19 @@ const handleBack = () => {
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .option-item {
   background: white;
   border: 2rpx solid #e0e0e0;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  border-radius: 12rpx;
+  padding: 18rpx 20rpx;
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  transition: all 0.3s ease;
+  gap: 16rpx;
+  transition: all 0.2s ease;
 }
 
 .option-item.selected {
@@ -1053,8 +1112,8 @@ const handleBack = () => {
 }
 
 .option-label {
-  width: 56rpx;
-  height: 56rpx;
+  width: 48rpx;
+  height: 48rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
   display: flex;
@@ -1072,7 +1131,7 @@ const handleBack = () => {
 }
 
 .label-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
   color: white;
 }
@@ -1082,7 +1141,7 @@ const handleBack = () => {
 }
 
 .option-text {
-  font-size: 28rpx;
+  font-size: 27rpx;
   line-height: 1.6;
   color: #333;
 }
@@ -1101,23 +1160,23 @@ const handleBack = () => {
 /* 答案解析 */
 .answer-section {
   background: white;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .answer-header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-bottom: 24rpx;
-  padding-bottom: 20rpx;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
   border-bottom: 1rpx solid #f0f0f0;
 }
 
 .answer-title {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 600;
   color: #333;
 }
@@ -1125,7 +1184,7 @@ const handleBack = () => {
 .answer-content {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .answer-row {
@@ -1134,13 +1193,13 @@ const handleBack = () => {
 }
 
 .answer-label {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #666;
-  min-width: 160rpx;
+  min-width: 150rpx;
 }
 
 .answer-value {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
 }
 
@@ -1154,30 +1213,31 @@ const handleBack = () => {
 
 .explanation {
   background: #f5f7fa;
-  padding: 24rpx;
-  border-radius: 12rpx;
-  margin-top: 8rpx;
+  padding: 20rpx;
+  border-radius: 10rpx;
+  margin-top: 6rpx;
 }
 
 .explanation-label {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
   color: #333;
   display: block;
-  margin-bottom: 12rpx;
+  margin-bottom: 10rpx;
 }
 
 .explanation-text {
-  font-size: 26rpx;
-  line-height: 1.8;
+  font-size: 25rpx;
+  line-height: 1.7;
   color: #666;
 }
 
 /* 操作按钮 */
 .action-buttons {
   display: flex;
-  gap: 16rpx;
-  padding: 0 20rpx;
+  gap: 12rpx;
+  padding: 0 20rpx 20rpx;
+  margin-top: 24rpx;
 }
 
 .action-btn {
@@ -1185,12 +1245,14 @@ const handleBack = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
-  padding: 28rpx;
-  border-radius: 16rpx;
-  font-size: 28rpx;
+  gap: 6rpx;
+  padding: 20rpx 16rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: 500;
   border: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 }
 
 .action-btn.secondary {
@@ -1211,6 +1273,10 @@ const handleBack = () => {
 .action-btn.finish {
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   color: white;
+}
+
+.action-btn .btn-text {
+  font-size: 26rpx;
 }
 
 /* 统计弹窗 */
