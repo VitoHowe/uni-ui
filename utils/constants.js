@@ -1,7 +1,20 @@
+// 环境配置
+const ENV_CONFIG = {
+  development: {
+    BASE_URL: 'http://localhost:3001/api'
+  },
+  production: {
+    BASE_URL: 'https://wxnode.mayday.qzz.io/api'
+  }
+}
+
+// 获取当前环境
+const currentEnv = process.env.NODE_ENV === 'production' ? 'production' : 'development'
+
 // API配置常量
 export const API_CONFIG = {
-  // 基础API地址
-  BASE_URL: 'http://localhost:3001/api',
+  // 基础API地址 - 根据环境自动切换
+  BASE_URL: ENV_CONFIG[currentEnv].BASE_URL,
   
   // 超时时间 (毫秒)
   TIMEOUT: 10000,
