@@ -1,24 +1,27 @@
 <template>
   <view class="exam-container">
     <!-- 顶部进度栏 -->
-    <view class="exam-header">
-      <view class="header-info">
-        <view class="back-btn" @click="handleBack">
-          <uni-icons type="back" size="20" color="#333" />
+    <view class="exam-header" :style="{ paddingTop: statusBarHeight + 'px', height: navBarHeight + 'px' }">
+      <view class="header-content">
+        <view class="header-info" :style="{ maxWidth: (menuButtonInfo.left || 0) > 0 ? (menuButtonInfo.left - 20) + 'px' : 'auto' }">
+          <view class="back-btn" @click="handleBack">
+            <uni-icons type="back" size="20" color="#333" />
+          </view>
+          <view class="exam-title">
+            <text class="title-text">{{ titleText }}</text>
+            <text class="subtitle-text">{{ subtitleText }}</text>
+          </view>
+          <!-- 统计按钮移到左侧，避免与胶囊重叠 -->
         </view>
-        <view class="exam-title">
-          <text class="title-text">{{ titleText }}</text>
-          <text class="subtitle-text">{{ subtitleText }}</text>
+        <view class="progress-container">
+          <view class="progress-bar">
+            <view class="progress-fill" :style="{width: progressPercent + '%'}"></view>
+          </view>
+          <text class="progress-text">{{ progressPercent }}%</text>
+          <view class="stats-btn" @click="showStats">
+            <uni-icons type="bars" size="18" color="#667eea" />
+          </view>
         </view>
-        <view class="stats-btn" @click="showStats">
-          <uni-icons type="bars" size="20" color="#333" />
-        </view>
-      </view>
-      <view class="progress-container">
-        <view class="progress-bar">
-          <view class="progress-fill" :style="{width: progressPercent + '%'}"></view>
-        </view>
-        <text class="progress-text">{{ progressPercent }}%</text>
       </view>
     </view>
 
@@ -229,6 +232,11 @@ import { get, post, del } from '@/utils/request.js'
 import { parseQuestionImages, extractAllQuestionImages } from '@/utils/imageParser.js'
 import { API_CONFIG } from '@/utils/constants.js'
 
+// 胶囊按钮和状态栏信息
+const menuButtonInfo = ref({})
+const statusBarHeight = ref(0)
+const navBarHeight = ref(0)
+
 // 页面参数
 const bankId = ref(0)
 const practiceMode = ref('full') // 'chapter' | 'full'
@@ -370,6 +378,22 @@ const currentImageUrls = computed(() => {
 
 // 页面加载
 onMounted(async () => {
+  // 获取胶囊按钮信息（仅微信小程序）
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    const systemInfo = uni.getSystemInfoSync()
+    menuButtonInfo.value = menuButton
+    statusBarHeight.value = systemInfo.statusBarHeight || 0
+    
+    // 计算导航栏高度：胶囊按钮底部位置 + 与顶部相同的间距
+    const gap = menuButton.top - statusBarHeight.value
+    navBarHeight.value = menuButton.height + gap * 2 + statusBarHeight.value
+  } catch (e) {
+    console.error('获取胶囊按钮信息失败:', e)
+  }
+  // #endif
+  
   // 获取路由参数
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
@@ -926,28 +950,48 @@ const handleImageClick = () => {
 /* 顶部进度栏 */
 .exam-header {
   background: white;
-  padding: 20rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 20rpx;
+}
+
+.header-content {
+  padding: 0 20rpx;
 }
 
 .header-info {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 20rpx;
   margin-bottom: 16rpx;
 }
 
-.back-btn, .stats-btn {
+.back-btn {
   width: 60rpx;
   height: 60rpx;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f7fa;
   border-radius: 50%;
+}
+
+.stats-btn {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f3ff;
+  border-radius: 50%;
+  margin-left: 16rpx;
 }
 
 .exam-title {
@@ -973,6 +1017,7 @@ const handleImageClick = () => {
   display: flex;
   align-items: center;
   gap: 16rpx;
+  width: 100%;
 }
 
 .progress-bar {

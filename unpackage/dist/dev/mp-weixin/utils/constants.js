@@ -1,7 +1,16 @@
 "use strict";
+const ENV_CONFIG = {
+  development: {
+    BASE_URL: "https://wxnode.mayday.qzz.io/api"
+  },
+  production: {
+    BASE_URL: "https://wxnode.mayday.qzz.io/api"
+  }
+};
+const currentEnv = "development";
 const API_CONFIG = {
-  // 基础API地址
-  BASE_URL: "http://localhost:3001/api",
+  // 基础API地址 - 根据环境自动切换
+  BASE_URL: ENV_CONFIG[currentEnv].BASE_URL,
   // 超时时间 (毫秒)
   TIMEOUT: 1e4,
   // Token过期前刷新时间 (毫秒) - 提前5分钟刷新

@@ -9,27 +9,45 @@
 /* 顶部进度栏 */
 .exam-header.data-v-970fed46 {
   background: white;
-  padding: 20rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
   position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 20rpx;
+}
+.header-content.data-v-970fed46 {
+  padding: 0 20rpx;
 }
 .header-info.data-v-970fed46 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 20rpx;
   margin-bottom: 16rpx;
 }
-.back-btn.data-v-970fed46, .stats-btn.data-v-970fed46 {
+.back-btn.data-v-970fed46 {
   width: 60rpx;
   height: 60rpx;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f5f7fa;
   border-radius: 50%;
+}
+.stats-btn.data-v-970fed46 {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f3ff;
+  border-radius: 50%;
+  margin-left: 16rpx;
 }
 .exam-title.data-v-970fed46 {
   flex: 1;
@@ -51,6 +69,7 @@
   display: flex;
   align-items: center;
   gap: 16rpx;
+  width: 100%;
 }
 .progress-bar.data-v-970fed46 {
   flex: 1;
