@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/study/study",
+    "pages/word-practice/word-practice",
     "pages/question/question",
     "pages/profile/profile",
     "pages/upload/upload",

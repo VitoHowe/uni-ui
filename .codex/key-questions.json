@@ -1,0 +1,21 @@
+﻿{
+  "questions": [
+    {
+      "priority": "high",
+      "question": "仅含中英文释义时，单词详情卡应保留哪些元素？是否继续展示发音按钮？"
+    },
+    {
+      "priority": "high",
+      "question": "面对481条词汇，页面如何进行分页/随机或搜索以保持性能？"
+    },
+    {
+      "priority": "medium",
+      "question": "收藏/待复习状态是否需要持久化到本地存储，以便统计汇总？"
+    },
+    {
+      "priority": "medium",
+      "question": "study页入口统计应如何更新为真实词库数据？"
+    }
+  ],
+  "notes": "围绕UI精简、性能、状态同步与入口信息更新展开。"
+}

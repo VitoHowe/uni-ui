@@ -2,7 +2,6 @@
 /* 水平间距 */
 .study-container.data-v-3f273c1e {
   padding: 0 0 120rpx 0;
-  /* 底部留出导航栏空间 */
   background-color: #f8f9fa;
   min-height: 100vh;
 }
@@ -76,6 +75,68 @@
   font-size: 24rpx;
   color: #666;
   margin-bottom: 15rpx;
+}
+.word-entry.data-v-3f273c1e {
+  margin: 20rpx;
+}
+.word-entry-card.data-v-3f273c1e {
+  background: linear-gradient(135deg, #0f62fe, #6b8bff);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.entry-title.data-v-3f273c1e {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+.entry-desc.data-v-3f273c1e {
+  font-size: 26rpx;
+  opacity: 0.9;
+  margin-top: 6rpx;
+}
+.entry-stats.data-v-3f273c1e {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 20rpx;
+}
+.stat-item.data-v-3f273c1e {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  text-align: center;
+}
+.stat-value.data-v-3f273c1e {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+.stat-label.data-v-3f273c1e {
+  display: block;
+  font-size: 24rpx;
+  margin-top: 6rpx;
+  opacity: 0.85;
+}
+.entry-action.data-v-3f273c1e {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8rpx;
+}
+.entry-btn.data-v-3f273c1e {
+  padding: 18rpx 48rpx;
+  background: #fff;
+  color: #0f62fe;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 16rpx rgba(15, 98, 254, 0.3);
+}
+.entry-tip.data-v-3f273c1e {
+  font-size: 24rpx;
+  opacity: 0.9;
 }
 .recent-study.data-v-3f273c1e {
   margin: 20rpx;

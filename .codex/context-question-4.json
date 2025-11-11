@@ -1,0 +1,18 @@
+﻿{
+  "question": "新的单词练习页需要怎样的分区与交互模式？",
+  "reason": "保证页面支持进度总览、功能入口、单词详情、收藏/错题列表。",
+  "findings": {
+    "referencePages": [
+      {
+        "file": "pages/question/question.vue",
+        "insight": "顶部统计卡+练习模式+错题列表，可借鉴卡片化层次"
+      },
+      {
+        "file": "pages/exam/exam.vue",
+        "insight": "包含操作入口与列表，说明uni-section + grid的可行性"
+      }
+    ],
+    "implication": "word-practice页可采用：Hero进度卡 -> 快速入口grid -> 单词详情卡 -> 收藏/错题/列表区"
+  },
+  "costReminder": "建议停止：第4次深挖，若仍有信息缺口需谨慎评估投入产出。"
+}

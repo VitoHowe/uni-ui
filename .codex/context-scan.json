@@ -1,0 +1,28 @@
+﻿{
+  "moduleLocation": {
+    "study": "pages/study/study.vue",
+    "wordPractice": "pages/word-practice/word-practice.vue",
+    "dataset": "mock/中高项单词词库.json"
+  },
+  "currentState": {
+    "dataset": {
+      "description": "包含 481 条记录，仅提供 english 与 chinese 字段。",
+      "gap": "现有UI依赖音标、例句、注释等字段，已与数据结构不符。"
+    },
+    "wordPracticePage": {
+      "description": "依旧使用 mock/word-practice.json 构造扩展字段，界面展示发音/例句/收藏/错题。",
+      "risks": [
+        "展示信息与真实数据不匹配",
+        "大规模词库未被加载，搜索/筛选缺失"
+      ]
+    }
+  },
+  "targetState": "用真实词库驱动UI，保留必要交互（随机/收藏/复习）但在缺少数据时降级为精简展示。",
+  "techStack": "uni-app + Vue3 + <script setup> + 本地JSON导入",
+  "tests": ["tests/wordPractice.spec.js（需改为校验新结构）"],
+  "observations": [
+    "词库仅有中英文本，需要重构详情卡、不再要求音标/例句",
+    "可继续使用Youdao发音API，仅依赖英文单词即可",
+    "为性能考虑需添加分页/随机取样或列表搜索"
+  ]
+}

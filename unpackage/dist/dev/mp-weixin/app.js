@@ -6,6 +6,7 @@ const utils_navigationGuard = require("./utils/navigationGuard.js");
 if (!Math) {
   "./pages/index/index.js";
   "./pages/study/study.js";
+  "./pages/word-practice/word-practice.js";
   "./pages/question/question.js";
   "./pages/profile/profile.js";
   "./pages/upload/upload.js";

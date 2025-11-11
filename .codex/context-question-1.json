@@ -1,0 +1,9 @@
+﻿{
+  "question": "需要展示哪些字段？",
+  "reason": "确认在缺少音标/例句时保留哪些信息",
+  "findings": {
+    "datasetFields": ["english", "chinese"],
+    "availableDerived": ["首字母", "长度", "随机分组"]
+  },
+  "decision": "详情卡保留英文、中文、收藏/复习按钮和发音按钮（依赖Youdao TTS）；移除音标/例句UI，使用标签化提示。"
+}

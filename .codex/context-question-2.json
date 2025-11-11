@@ -1,0 +1,9 @@
+﻿{
+  "question": "发音功能如何实现？项目内是否已有音频播放或TTS封装可复用？",
+  "reason": "决定是直接调用uni-app的InnerAudioContext还是封装请求第三方API。",
+  "investigation": {
+    "search": "rg -n audio -g*.vue/*.js",
+    "result": "未检索到任何音频或TTS相关实现，需从零构建。"
+  },
+  "implication": "需要在study.vue内新建音频播放逻辑，先用mock音频URL，后续替换为免费API的返回数据。"
+}

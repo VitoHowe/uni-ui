@@ -1,0 +1,24 @@
+﻿{
+  "question": "study页应如何安置进入单词练习的入口并保持版面不拥挤？",
+  "reason": "需要确定入口位置与样式，避免再次膨胀，同时与学习模块并列。",
+  "findings": {
+    "studyPage": {
+      "layout": "progress-card -> study-modules -> (word card) -> recent-study",
+      "inference": "原本单词卡位于学习模块与最近学习之间，空间充足，可在此放置简洁入口卡"
+    }
+  },
+  "evidence": [
+    {
+      "file": "pages/study/study.vue",
+      "lines": "1-80",
+      "summary": "顶部进度卡与学习模块布局"
+    },
+    {
+      "file": "pages/study/study.vue",
+      "lines": "80-140",
+      "summary": "原单词卡位置，可替换为入口卡"
+    }
+  ],
+  "decision": "在学习模块后新增迷你CTA card，使用uni-section + call-to-action按钮",
+  "costReminder": "评估成本：第3次深挖，信息已足够，请尽快进入规划阶段。"
+}

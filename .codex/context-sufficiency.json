@@ -1,0 +1,22 @@
+﻿{
+  "interfaceContract": {
+    "status": true,
+    "notes": "word practice 页面消费 `Array<{english:string,chinese:string}>`，内部扩展收藏/复习等状态。"
+  },
+  "techRationale": {
+    "status": true,
+    "notes": "使用局部分页/搜索避免一次性渲染全部，继续沿用uni-app组件与InnerAudioContext播放发音。"
+  },
+  "risksIdentified": {
+    "status": true,
+    "notes": [
+      "渲染481条时可能卡顿，需要分页或抽样",
+      "缺少音标/例句需调整UI避免空字段",
+      "数据体积增大需确保打包大小可控"
+    ]
+  },
+  "validationPlan": {
+    "status": true,
+    "notes": "更新tests/wordPractice.spec.js校验中文/英文，手动验证搜索、收藏、发音与分页。"
+  }
+}

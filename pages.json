@@ -13,6 +13,14 @@
 			}
 		},
 		{
+			"path": "pages/word-practice/word-practice",
+			"style": {
+				"navigationBarTitleText": "单词练习",
+				"navigationBarBackgroundColor": "#f5f7fb",
+				"backgroundColor": "#f5f7fb"
+			}
+		},
+		{
 			"path": "pages/question/question",
 			"style": {
 				"navigationBarTitleText": "题库"

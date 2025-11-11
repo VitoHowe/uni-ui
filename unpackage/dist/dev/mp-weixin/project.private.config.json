@@ -16,9 +16,9 @@
     "useLanDebug": false,
     "showES6CompileOption": false,
     "checkInvalidKey": true,
-    "ignoreDevUnusedFiles": true,
+    "ignoreDevUnusedFiles": false,
     "bigPackageSizeSupport": false
   },
-  "libVersion": "3.10.3",
+  "libVersion": "3.10.1",
   "condition": {}
 }

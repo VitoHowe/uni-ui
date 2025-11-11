@@ -7118,9 +7118,9 @@ function isConsoleWritable() {
   return isWritable;
 }
 function initRuntimeSocketService() {
-  const hosts = "127.0.0.1,192.168.8.178,172.23.32.1";
+  const hosts = "127.0.0.1,192.168.8.178,172.29.240.1";
   const port = "8090";
-  const id = "mp-weixin_vFF1Y4";
+  const id = "mp-weixin_QtXpgt";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8679,6 +8679,14 @@ const pages = [
     path: "pages/study/study",
     style: {
       navigationBarTitleText: "学习"
+    }
+  },
+  {
+    path: "pages/word-practice/word-practice",
+    style: {
+      navigationBarTitleText: "单词练习",
+      navigationBarBackgroundColor: "#f5f7fb",
+      backgroundColor: "#f5f7fb"
     }
   },
   {

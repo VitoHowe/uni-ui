@@ -128,7 +128,7 @@ const _sfc_main = {
         const gap = menuButton.top - statusBarHeight.value;
         navBarHeight.value = menuButton.height + gap * 2 + statusBarHeight.value;
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:393", "获取胶囊按钮信息失败:", e);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:357", "获取胶囊按钮信息失败:", e);
       }
       const pages = getCurrentPages();
       const currentPage = pages[pages.length - 1];
@@ -160,20 +160,20 @@ const _sfc_main = {
     const initExam = async () => {
       loading.value = true;
       try {
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:440", "📖 开始初始化考试，参数:", {
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:404", "📖 开始初始化考试，参数:", {
           bankId: bankId.value,
           mode: practiceMode.value,
           chapterId: startChapterId.value,
           questionNumber: startQuestionNumber.value
         });
         const bankData = await utils_request.get(`/questions/banks/${bankId.value}`, {}, { showLoading: false });
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:449", "✅ 题库信息:", bankData);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:413", "✅ 题库信息:", bankData);
         bankInfo.value = {
           bank_name: bankData.name || "题库",
           total_questions: bankData.question_count || 0
         };
         const chaptersData = await utils_request.get(`/question-banks/${bankId.value}/chapters`, {}, { showLoading: false });
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:458", "✅ 章节列表:", chaptersData);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:422", "✅ 章节列表:", chaptersData);
         chapters.value = chaptersData.chapters || [];
         if (chapters.value.length === 0) {
           common_vendor.index.showToast({ title: "该题库暂无章节", icon: "none" });
@@ -183,19 +183,19 @@ const _sfc_main = {
         if (startChapterId.value) {
           const index = chapters.value.findIndex((c) => c.id === startChapterId.value);
           currentChapterIndex.value = index >= 0 ? index : 0;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:472", `📍 找到起始章节，索引: ${currentChapterIndex.value}`);
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:436", `📍 找到起始章节，索引: ${currentChapterIndex.value}`);
         } else {
           currentChapterIndex.value = 0;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:475", "📍 使用第一个章节");
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:439", "📍 使用第一个章节");
         }
         currentChapter.value = chapters.value[currentChapterIndex.value];
         currentQuestionNumber.value = startQuestionNumber.value;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:481", "📍 当前章节:", currentChapter.value);
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:482", "📍 起始题号:", currentQuestionNumber.value);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:445", "📍 当前章节:", currentChapter.value);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:446", "📍 起始题号:", currentQuestionNumber.value);
         await loadQuestion();
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:487", `✅ 初始化完成，开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:451", `✅ 初始化完成，开始${practiceMode.value === "chapter" ? "章节" : "整卷"}练习`);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:490", "❌ 初始化失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:454", "❌ 初始化失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
@@ -203,24 +203,24 @@ const _sfc_main = {
         setTimeout(() => common_vendor.index.navigateBack(), 1500);
       } finally {
         loading.value = false;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:498", "✅ 初始化loading状态已重置");
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:462", "✅ 初始化loading状态已重置");
       }
     };
     const loadQuestion = async () => {
       if (!currentChapter.value) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:505", "❌ currentChapter is null");
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:469", "❌ currentChapter is null");
         return;
       }
       loading.value = true;
       try {
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:511", `📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:475", `📖 开始加载题目: 题库${bankId.value}, 章节${currentChapter.value.id}, 题号${currentQuestionNumber.value}`);
         const response = await utils_request.get(
           `/question-banks/${bankId.value}/chapters/${currentChapter.value.id}/questions`,
           { questionNumber: currentQuestionNumber.value },
           { showLoading: false }
           // 使用组件自己的loading状态，不显示系统加载提示
         );
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:519", "📡 题目数据响应:", response);
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:483", "📡 题目数据响应:", response);
         if (response && response.question) {
           currentQuestion.value = response.question;
           totalInChapter.value = response.total || 0;
@@ -238,9 +238,9 @@ const _sfc_main = {
           const cacheKey = getAnswerKey();
           questionCache.value[cacheKey] = response.question;
           showAnswer.value = false;
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:545", `✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:509", `✅ 题目加载成功: ${currentChapter.value.chapter_name} 第${currentQuestionNumber.value}题`);
         } else {
-          common_vendor.index.__f__("warn", "at pages/exam/exam.vue:547", "⚠️ 响应中没有question字段:", response);
+          common_vendor.index.__f__("warn", "at pages/exam/exam.vue:511", "⚠️ 响应中没有question字段:", response);
           if (practiceMode.value === "full" && canSwitchToNextChapter()) {
             await switchToNextChapter();
           } else {
@@ -248,14 +248,14 @@ const _sfc_main = {
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:557", "❌ 加载题目失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:521", "❌ 加载题目失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
         });
       } finally {
         loading.value = false;
-        common_vendor.index.__f__("log", "at pages/exam/exam.vue:564", "✅ loading状态已重置为false");
+        common_vendor.index.__f__("log", "at pages/exam/exam.vue:528", "✅ loading状态已重置为false");
       }
     };
     const canSwitchToNextChapter = () => {
@@ -425,7 +425,7 @@ const _sfc_main = {
             },
             { showLoading: false }
           );
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:805", "💾 章节进度已保存:", {
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:769", "💾 章节进度已保存:", {
             mode: "chapter",
             chapter: currentChapter.value.chapter_name,
             questionNumber: currentQuestionNumber.value,
@@ -448,7 +448,7 @@ const _sfc_main = {
             },
             { showLoading: false }
           );
-          common_vendor.index.__f__("log", "at pages/exam/exam.vue:832", "💾 整卷进度已保存:", {
+          common_vendor.index.__f__("log", "at pages/exam/exam.vue:796", "💾 整卷进度已保存:", {
             mode: "full",
             chapter: currentChapter.value.chapter_name,
             chapterQuestionNumber: currentQuestionNumber.value,
@@ -457,7 +457,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam/exam.vue:841", "保存进度失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam/exam.vue:805", "保存进度失败:", error);
       }
     };
     const resetProgress = async () => {
@@ -485,10 +485,10 @@ const _sfc_main = {
                 title: "已重新开始",
                 icon: "success"
               });
-              common_vendor.index.__f__("log", "at pages/exam/exam.vue:881", "🔄 学习进度已重置");
+              common_vendor.index.__f__("log", "at pages/exam/exam.vue:845", "🔄 学习进度已重置");
             } catch (error) {
               common_vendor.index.hideLoading();
-              common_vendor.index.__f__("error", "at pages/exam/exam.vue:884", "重置进度失败:", error);
+              common_vendor.index.__f__("error", "at pages/exam/exam.vue:848", "重置进度失败:", error);
               common_vendor.index.showToast({
                 title: error.message || "重置失败",
                 icon: "none"

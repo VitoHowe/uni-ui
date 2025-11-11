@@ -1,7 +1,7 @@
 "use strict";
 const ENV_CONFIG = {
   development: {
-    BASE_URL: "https://wxnode.mayday.qzz.io/api"
+    BASE_URL: "http://localhost:3001/api"
   },
   production: {
     BASE_URL: "https://wxnode.mayday.qzz.io/api"
