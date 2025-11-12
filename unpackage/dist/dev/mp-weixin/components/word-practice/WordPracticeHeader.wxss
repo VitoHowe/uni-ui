@@ -1,0 +1,88 @@
+/* 水平间距 */
+/* 水平间距 */
+.word-header.data-v-8010eff1 {
+  margin: 20rpx;
+  padding: 38rpx 34rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #312e81, #6366f1);
+  color: #fff;
+  box-shadow: 0 24rpx 60rpx rgba(79, 70, 229, 0.35);
+}
+.word-header__meta.data-v-8010eff1 {
+  display: flex;
+  justify-content: space-between;
+  gap: 32rpx;
+}
+.info-eyebrow.data-v-8010eff1 {
+  font-size: 24rpx;
+  letter-spacing: 4rpx;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.info-title.data-v-8010eff1 {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 46rpx;
+  font-weight: 700;
+}
+.info-desc.data-v-8010eff1 {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+.word-header__progress.data-v-8010eff1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+.progress-ring.data-v-8010eff1 {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 4rpx solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.progress-value.data-v-8010eff1 {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+.progress-label.data-v-8010eff1 {
+  font-size: 22rpx;
+  opacity: 0.85;
+}
+.progress-switch.data-v-8010eff1 {
+  border: none;
+  border-radius: 999rpx;
+  padding: 12rpx 26rpx;
+  font-size: 26rpx;
+  color: #0f172a;
+  background: #fff;
+}
+.word-header__stats.data-v-8010eff1 {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 32rpx;
+}
+.word-stat.data-v-8010eff1 {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.18);
+}
+.word-stat__value.data-v-8010eff1 {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+.word-stat__label.data-v-8010eff1 {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  opacity: 0.85;
+}

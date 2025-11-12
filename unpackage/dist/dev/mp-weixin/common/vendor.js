@@ -7118,9 +7118,9 @@ function isConsoleWritable() {
   return isWritable;
 }
 function initRuntimeSocketService() {
-  const hosts = "127.0.0.1,192.168.8.178,172.29.240.1";
+  const hosts = "192.168.31.31,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_QtXpgt";
+  const id = "mp-weixin_Pl3fy0";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8668,6 +8668,11 @@ const onShow = /* @__PURE__ */ createLifeCycleHook(
   1 | 2
   /* HookFlags.PAGE */
 );
+const onLoad = /* @__PURE__ */ createLifeCycleHook(
+  ON_LOAD,
+  2
+  /* HookFlags.PAGE */
+);
 const pages = [
   {
     path: "pages/index/index",
@@ -8687,6 +8692,14 @@ const pages = [
       navigationBarTitleText: "单词练习",
       navigationBarBackgroundColor: "#f5f7fb",
       backgroundColor: "#f5f7fb"
+    }
+  },
+  {
+    path: "pages/word-practice/word-detail",
+    style: {
+      navigationBarTitleText: "词书练习",
+      navigationBarBackgroundColor: "#f4f0ff",
+      backgroundColor: "#f6f7fb"
     }
   },
   {
@@ -11604,6 +11617,7 @@ exports.f = f$1;
 exports.index = index;
 exports.n = n$1;
 exports.o = o$1;
+exports.onLoad = onLoad;
 exports.onMounted = onMounted;
 exports.onShow = onShow;
 exports.onUnmounted = onUnmounted;

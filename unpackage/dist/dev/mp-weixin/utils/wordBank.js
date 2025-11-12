@@ -1940,7 +1940,6 @@ const normalizedWordBank = (() => {
   }));
 })();
 const wordBank = normalizedWordBank;
-const wordIds = normalizedWordBank.map((item) => item.id);
+normalizedWordBank.map((item) => item.id);
 exports.wordBank = wordBank;
-exports.wordIds = wordIds;
 //# sourceMappingURL=../../.sourcemap/mp-weixin/utils/wordBank.js.map

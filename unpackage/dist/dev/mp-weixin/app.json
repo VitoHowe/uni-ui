@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/study/study",
     "pages/word-practice/word-practice",
+    "pages/word-practice/word-detail",
     "pages/question/question",
     "pages/profile/profile",
     "pages/upload/upload",
