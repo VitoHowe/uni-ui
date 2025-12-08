@@ -1,28 +1,76 @@
-﻿{
-  "moduleLocation": {
-    "study": "pages/study/study.vue",
-    "wordPractice": "pages/word-practice/word-practice.vue",
-    "dataset": "mock/中高项单词词库.json"
-  },
-  "currentState": {
-    "dataset": {
-      "description": "包含 481 条记录，仅提供 english 与 chinese 字段。",
-      "gap": "现有UI依赖音标、例句、注释等字段，已与数据结构不符。"
+{
+  "module": "word practice workflow",
+  "locations": [
+    {
+      "path": "pages/word-practice/word-practice.vue",
+      "role": "primary page composing hero stats, quick actions, current word detail, lists and pagination; currently monolithic"
     },
-    "wordPracticePage": {
-      "description": "依旧使用 mock/word-practice.json 构造扩展字段，界面展示发音/例句/收藏/错题。",
-      "risks": [
-        "展示信息与真实数据不匹配",
-        "大规模词库未被加载，搜索/筛选缺失"
-      ]
+    {
+      "path": "utils/wordBank.js",
+      "role": "loads mock JSON (`mock/中高项单词词库.json`) and normalizes a local list used by the page"
+    },
+    {
+      "path": "utils/constants.js",
+      "role": "defines API base URLs and endpoints but no word-book specific entries yet"
+    },
+    {
+      "path": "tests/wordPractice.spec.js",
+      "role": "Node script validating the mock word bank file size/content"
     }
+  ],
+  "current_state": {
+    "data_source": "Front-end imports static `wordBank` and `wordIds`, no API calls to backend",
+    "progress_storage": "Favorites/Mastered/Review tracked via `uni.setStorageSync` under `WORD_PRACTICE_PROGRESS`, keyed only by word id",
+    "features": [
+      "Search/filter/pagination of the static list",
+      "Bookmarking, mastered/review tagging, random jump, audio playback placeholder",
+      "Lists for favorites, review queue, and master list table"
+    ],
+    "limitations": [
+      "Cannot choose among multiple word books",
+      "No persistence of word source or per-book progress",
+      "Logic tightly coupled inside one Vue SFC with >800 lines of template+script+style"
+    ]
   },
-  "targetState": "用真实词库驱动UI，保留必要交互（随机/收藏/复习）但在缺少数据时降级为精简展示。",
-  "techStack": "uni-app + Vue3 + <script setup> + 本地JSON导入",
-  "tests": ["tests/wordPractice.spec.js（需改为校验新结构）"],
-  "observations": [
-    "词库仅有中英文本，需要重构详情卡、不再要求音标/例句",
-    "可继续使用Youdao发音API，仅依赖英文单词即可",
-    "为性能考虑需添加分页/随机取样或列表搜索"
-  ]
+  "similar_patterns": [
+    {
+      "path": "pages/exam/exam.vue",
+      "note": "Large interactive flow using separate components/utilities; demonstrates advanced state orchestration and navigation"
+    },
+    {
+      "path": "pages/exam-list/exam-list.vue",
+      "note": "List view with stats + filtering + navigation; can inform word book selector layout"
+    },
+    {
+      "path": "pages/question/question.vue",
+      "note": "Simpler stats + quick entry cards structure similar to quick actions region"
+    }
+  ],
+  "tech_stack": {
+    "framework": "Vue 3 + `<script setup>` within uni-app runtime",
+    "ui_components": ["uni-section", "uni-icons", "uni-table", "uni-pagination", "uni-popup"],
+    "state": "Local refs/reactive/computed; `uni` APIs for storage/audio; no centralized store for words"
+  },
+  "tests": [
+    {
+      "path": "tests/wordPractice.spec.js",
+      "type": "Node assert script",
+      "coverage": "Validates mock JSON length and duplicate entries; no UI/unit tests"
+    }
+  ],
+  "observation_report": {
+    "tooling_notes": "code-index MCP tool unavailable -> relying on manual file reads (recorded).",
+    "issues": [
+      "Page depends entirely on mock data; needs API client integration",
+      "Progress tracking lacks book context, so multi-book scenario unsupported",
+      "Componentization absent; future changes risk regression without splitting concerns",
+      "Existing test only guards mock data, not runtime behavior"
+    ],
+    "suggested_next_steps": [
+      "Design API service layer for `/api/word-books` and `/api/word-books/{id}/words` using existing constants/request helper",
+      "Model book-aware progress entities (favorites/review/mastered referencing bookId+wordId)",
+      "Split UI into selection, practice panel, list modules before feature expansion",
+      "Plan new automated tests (unit + integration) covering data transforms and state transitions"
+    ]
+  }
 }

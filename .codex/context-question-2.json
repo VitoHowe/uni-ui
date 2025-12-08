@@ -1,9 +1,25 @@
-﻿{
-  "question": "发音功能如何实现？项目内是否已有音频播放或TTS封装可复用？",
-  "reason": "决定是直接调用uni-app的InnerAudioContext还是封装请求第三方API。",
-  "investigation": {
-    "search": "rg -n audio -g*.vue/*.js",
-    "result": "未检索到任何音频或TTS相关实现，需从零构建。"
-  },
-  "implication": "需要在study.vue内新建音频播放逻辑，先用mock音频URL，后续替换为免费API的返回数据。"
+{
+  "question": "单词书选择流程应该如何设计？",
+  "reason_for_deep_dive": "页面当前只展示单一静态词库；新增多词库后需要清晰入口与状态管理，避免页面臃肿。",
+  "sources": [
+    {
+      "path": "pages/exam-list/exam-list.vue",
+      "insight": "已有卡片式列表 + 统计概览 + 过滤器布局，可复用为词书列表/筛选模板。"
+    },
+    {
+      "path": "pages/word-practice/word-practice.vue",
+      "insight": "Hero 区域/quick actions 占据首屏，可在 header 中插入当前词书信息和“切换”按钮，再通过弹窗/侧滑列表加载词书。"
+    }
+  ],
+  "findings": [
+    "移动端体验建议采用“练习页顶部展示当前词书信息 + 独立弹窗/抽屉列出所有词书”的模式，避免跳页。",
+    "词书列表需要显示描述/词条数量/更新时间，并支持按名称搜索；选中后需触发词条拉取与进度加载。",
+    "为保持组件化，计划拆分为 `WordBookSelector`（含弹窗 + 列表）与 `WordPracticePanel`，通过事件总线或 props 传递当前 `bookId`。"
+  ],
+  "next_actions": [
+    "创建 `services/word-books.js` 暴露 `fetchWordBooks`、`fetchWordBookWords`。",
+    "在 `WordPracticePage` 中维护 `selectedBook` 状态，并将 selector 抽成组件；处理首次加载逻辑（默认选第一本或最近一次 selection）。",
+    "在 hero 区显示当前书籍名称 + 下拉切换；在 `WordBookSelector` 里提供分页/搜索 UI。"
+  ],
+  "status": "direction_defined"
 }

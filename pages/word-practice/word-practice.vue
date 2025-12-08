@@ -1,5 +1,5 @@
-<template>
-  <view class="word-practice-page">
+﻿<template>
+  <view class="word-hub">
     <view class="hero-card">
       <view class="hero-head">
         <view>
@@ -649,8 +649,8 @@ onUnmounted(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-.word-practice-page {
+<style scoped lang="scss">
+.word-hub {
   min-height: 100vh;
   background: linear-gradient(180deg, #f6f8ff 0%, #f9fafb 100%);
   padding: 12rpx 20rpx 80rpx;
@@ -673,15 +673,25 @@ onUnmounted(() => {
   gap: 16rpx;
 }
 
+.hero-badge {
+  font-size: 24rpx;
+  letter-spacing: 4rpx;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
 .hero-title {
-  font-size: 40rpx;
+  display: block;
+  margin-top: 12rpx;
+  font-size: 48rpx;
   font-weight: 700;
 }
 
-.hero-subtitle {
+.hero-desc {
   display: block;
-  margin-top: 8rpx;
+  margin-top: 10rpx;
   font-size: 26rpx;
+  opacity: 0.9;
   opacity: 0.9;
 }
 
@@ -731,7 +741,6 @@ onUnmounted(() => {
   display: block;
   margin-top: 6rpx;
   font-size: 24rpx;
-  opacity: 0.9;
 }
 
 .progress-line {

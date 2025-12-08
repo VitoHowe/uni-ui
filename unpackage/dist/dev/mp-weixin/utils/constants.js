@@ -30,6 +30,12 @@ const API_ENDPOINTS = {
     LOGOUT: "/auth/logout"
     // 退出登录
   },
+  // 单词书管理
+  WORD_BOOKS: {
+    LIST: "/word-books",
+    WORDS: (bookId) => `/word-books/${bookId}/words`,
+    PROGRESS: (bookId) => `/word-books/${bookId}/progress`
+  },
   // 用户管理
   USERS: {
     LIST: "/users",

@@ -1,0 +1,34 @@
+{
+  "known": [
+    "后端提供 `/api/word-books` 列表与 `/api/word-books/{id}/words` 全量返回数据，字段包含 word、translation、extra 等。",
+    "现有 word-practice 页面完全依赖本地 `wordBank`，进度通过 `uni.setStorageSync` 以 wordId 记录。",
+    "项目里有 `utils/request.js` 封装可复用，也已定义全局 API 常量文件。"
+  ],
+  "unknown": [
+    "收藏/错词/掌握的状态需要与后端同步吗？若需要，接口和字段要求未提供。",
+    "多单词书场景下，前端需要何种默认策略（例如默认选择首本？需要最近一次记忆书ID？）。",
+    "进度保存涉及到统计哪些数据（当前位置、掌握数量、错词列表等）与如何跨端同步。"
+  ],
+  "prioritized_questions": [
+    {
+      "priority": "high",
+      "question": "进度保存与收藏/错词等状态是否需要后端 API？如果后端暂未提供，需要怎样的契约以便文档说明。"
+    },
+    {
+      "priority": "high",
+      "question": "单词书选择组件的 UX 流程（在原页面内部弹窗还是独立页）以及初始加载哪本书的策略。"
+    },
+    {
+      "priority": "medium",
+      "question": "一次性返回整本单词的性能及分页策略：是否需要本地分页还是后端分页，需要明确。"
+    },
+    {
+      "priority": "medium",
+      "question": "音频与发音数据来源是否提供新字段，如果没有需要用第三方 API 还是保持静态？"
+    },
+    {
+      "priority": "low",
+      "question": "现有 `wordPractice.spec.js` 测试是否仍需保留/拓展到调用真实 API mock。"
+    }
+  ]
+}
