@@ -1,415 +1,591 @@
 <template>
   <view class="word-practice-page">
     <view class="hero-card">
-      <view class="hero-header">
+      <view class="hero-head">
         <view>
           <text class="hero-title">单词练习中心</text>
-          <text class="hero-subtitle">覆盖 {{ wordPracticeList.length }} 条行业词条 · 聚焦中高项备考</text>
+          <text class="hero-subtitle">
+            {{ selectedBook ? selectedBook.name : '请选择单词书' }}
+          </text>
         </view>
-        <text class="hero-progress">{{ learningRate }}%</text>
+        <view class="hero-actions">
+          <view class="hero-chip" @click="openBookPicker">
+            <uni-icons type="arrowdown" size="16" color="#0f62fe" />
+            <text>切换单词书</text>
+          </view>
+          <view class="hero-chip ghost" @click="openListDrawer">
+            <uni-icons type="list" size="16" color="#0f62fe" />
+            <text>查看列表</text>
+          </view>
+        </view>
       </view>
       <view class="hero-stats">
-        <view class="hero-stat" v-for="stat in heroStats" :key="stat.label">
+        <view class="stat" v-for="stat in summaryStats" :key="stat.label">
           <text class="stat-value">{{ stat.value }}</text>
           <text class="stat-label">{{ stat.label }}</text>
         </view>
       </view>
-    </view>
-
-    <view class="search-section">
-      <view class="search-bar">
-        <uni-icons type="search" size="18" color="#65728a" />
-        <input
-          class="search-input"
-          v-model="searchKeyword"
-          placeholder="输入英文或中文快速查找"
-          confirm-type="search"
-          @confirm="onSearchConfirm"
-        />
-        <view class="clear-btn" v-if="searchKeyword" @click="clearSearch">
-          <uni-icons type="closeempty" size="16" color="#65728a" />
-        </view>
-      </view>
-      <view class="filter-row">
-        <text class="filter-info">共 {{ filteredWords.length }} 条 · 第 {{ currentPage }}/{{ totalPages }}</text>
-        <view class="filter-actions">
-          <text class="filter-btn" @click="jumpRandom">随机一词</text>
-          <text class="filter-btn" v-if="searchKeyword" @click="resetFilters">重置</text>
-        </view>
+      <view class="progress-line">
+        <uni-progress :percent="learningRate" color="#0f62fe" active stroke-width="8" />
+        <text class="progress-text">进度 {{ learningRate }}%</text>
       </view>
     </view>
 
-    <view class="quick-section">
-      <uni-section title="功能入口" type="line" padding>
-        <view class="action-grid">
-          <view class="action-item" v-for="action in quickActions" :key="action.type" @click="handleQuickAction(action)">
-            <view class="action-icon" :style="{ backgroundColor: action.bg }">
-              <uni-icons :type="action.icon" size="20" color="#fff" />
-            </view>
-            <view class="action-info">
-              <text class="action-name">{{ action.name }}</text>
-              <text class="action-desc">{{ action.desc }}</text>
-            </view>
-            <text class="action-count">{{ action.count }}</text>
-          </view>
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">单词书分类</text>
+        <view class="section-tip">挑选想练的词书，支持上传后台导入的词书</view>
+      </view>
+      <scroll-view scroll-x class="book-scroll" v-if="state.wordBooks.length">
+        <view
+          class="book-card"
+          v-for="book in state.wordBooks"
+          :key="book.id"
+          :class="{ active: selectedBook && selectedBook.id === book.id }"
+          @click="selectBook(book)"
+        >
+          <text class="book-name">{{ book.name }}</text>
+          <text class="book-meta">{{ book.total_words || book.total || 0 }} 词</text>
         </view>
-      </uni-section>
+      </scroll-view>
+      <view v-else class="empty-block">
+        <uni-icons type="info" size="24" color="#8c8c8c" />
+        <text>暂无词书，请先在后台上传词书</text>
+      </view>
     </view>
 
-    <view class="word-detail">
-      <uni-section title="当前单词" type="line" padding>
-        <view v-if="currentWord" class="word-card">
-          <view class="word-head">
-            <view>
-              <text class="word-text">{{ currentWord.english }}</text>
-              <text class="word-chinese">{{ currentWord.chinese }}</text>
-            </view>
-            <view class="word-tag">{{ currentWord.english.charAt(0).toUpperCase() }}</view>
-          </view>
-          <view class="word-actions">
-            <view class="action-pill" @click="playPronunciation">
-              <uni-icons type="sound" size="18" color="#fff" />
-              <text>发音</text>
-            </view>
-            <view class="action-pill" @click="toggleBookmark(currentWord)">
-              <uni-icons type="star" size="18" :color="currentWord.bookmarked ? '#f7b500' : '#fff'" />
-              <text>{{ currentWord.bookmarked ? '已收藏' : '收藏' }}</text>
-            </view>
-            <view class="action-pill" @click="markWord('mastered')">
-              <uni-icons type="checkmarkempty" size="18" color="#fff" />
-              <text>掌握</text>
-            </view>
-            <view class="action-pill" @click="markWord('review')">
-              <uni-icons type="refresh" size="18" color="#fff" />
-              <text>复习</text>
-            </view>
-          </view>
-          <view class="word-meta">
-            <text>索引：{{ currentWordIndex + 1 }}/{{ wordPracticeList.length }}</text>
-            <text>状态：{{ masteryMap[currentWord.mastery] }}</text>
-          </view>
-          <view v-if="pronunciationState.error" class="audio-error">
-            {{ pronunciationState.error }}
-          </view>
-          <view class="word-navigation">
-            <view class="nav-btn ghost" @click="switchWord('prev')">上一词</view>
-            <view class="nav-btn primary" @click="switchWord('next')">下一词</view>
-          </view>
-          <view class="next-preview">即将学习：{{ nextWordPreview }}</view>
-        </view>
-        <view v-else class="word-empty">
-          <uni-icons type="info" size="32" color="#999" />
-          <text>暂无单词，稍后再试</text>
-        </view>
-      </uni-section>
-    </view>
-
-    <view class="favorites-section">
-      <uni-section title="收藏夹" type="line" padding>
-        <view v-if="favoriteWords.length" class="favorite-chips">
-          <view class="favorite-chip" v-for="word in favoriteWords" :key="word.id" @click="jumpToWord(word.id)">
-            <text class="chip-word">{{ word.english }}</text>
-            <text class="chip-note">{{ word.chinese }}</text>
-          </view>
-        </view>
-        <view v-else class="empty-state">
-          <uni-icons type="star" size="34" color="#f7b500" />
-          <text>暂无收藏，点击上方收藏按钮快速添加</text>
-        </view>
-      </uni-section>
-    </view>
-
-    <view class="review-section">
-      <uni-section title="待复习 / 错题本" type="line" padding>
-        <view v-if="reviewWords.length" class="review-list">
-          <view class="review-item" v-for="word in reviewWords" :key="word.id" @click="jumpToWord(word.id)">
-            <view>
-              <text class="review-word">{{ word.english }}</text>
-              <text class="review-definition">{{ word.chinese }}</text>
-            </view>
-            <text class="review-badge">待复习</text>
-          </view>
-        </view>
-        <view v-else class="empty-state">
-          <uni-icons type="checkmarkempty" size="34" color="#28a745" />
-          <text>暂无复习任务，继续保持！</text>
-        </view>
-      </uni-section>
-    </view>
-
-    <view class="word-list-section">
-      <uni-section title="单词列表" type="line" padding>
-        <uni-list>
-          <uni-list-item
-            v-for="word in paginatedWords"
-            :key="word.id"
-            :title="word.english"
-            :note="word.chinese"
-            :rightText="masteryMap[word.mastery]"
-            clickable
-            @click="jumpToWord(word.id)"
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">练习模式</text>
+        <view class="pill-group">
+          <view
+            class="pill"
+            v-for="mode in practiceModes"
+            :key="mode.value"
+            :class="{ active: state.practiceFilter === mode.value }"
+            @click="changePracticeFilter(mode.value)"
           >
-            <template v-slot:header>
-              <view class="list-icon">
-                <uni-icons :type="word.bookmarked ? 'star' : 'sound'" size="18" :color="word.bookmarked ? '#f7b500' : '#36cfc9'" />
-              </view>
-            </template>
-          </uni-list-item>
-        </uni-list>
-        <view class="pagination">
-          <view class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage('prev')">上一页</view>
-          <view class="page-info">第 {{ currentPage }} / {{ totalPages }} 页</view>
-          <view class="page-btn" :class="{ disabled: currentPage === totalPages }" @click="changePage('next')">下一页</view>
+            {{ mode.label }}
+          </view>
         </view>
-      </uni-section>
+      </view>
+      <view class="mode-actions">
+        <view class="mode-btn primary" @click="jumpRandom">
+          <uni-icons type="loop" size="18" color="#fff" />
+          <text>随机一词</text>
+        </view>
+        <view class="mode-btn ghost" @click="openListDrawer">
+          <uni-icons type="list" size="18" color="#0f62fe" />
+          <text>查看单词列表</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card word-card" v-if="currentWord">
+      <view class="word-head">
+        <view>
+          <text class="word-text">{{ currentWord.word }}</text>
+          <text class="word-phonetic" v-if="currentWord.phonetic">/{{ currentWord.phonetic }}/</text>
+          <text class="word-translation">{{ currentWord.translation }}</text>
+        </view>
+        <view class="word-tag">#{{ currentWord.order_index }}</view>
+      </view>
+
+      <view class="word-actions">
+        <view class="action-chip" @click="playPronunciation">
+          <uni-icons type="sound" size="18" color="#fff" />
+          <text>发音</text>
+        </view>
+        <view
+          class="action-chip"
+          :class="{ warn: currentWord.is_favorite }"
+          @click="toggleFavorite(currentWord)"
+        >
+          <uni-icons type="star" size="18" :color="currentWord.is_favorite ? '#fff' : '#fff'" />
+          <text>{{ currentWord.is_favorite ? '已收藏' : '收藏' }}</text>
+        </view>
+        <view class="action-chip" @click="markWord('mastered')">
+          <uni-icons type="checkmarkempty" size="18" color="#fff" />
+          <text>掌握</text>
+        </view>
+        <view class="action-chip" @click="markWord('review')">
+          <uni-icons type="refresh" size="18" color="#fff" />
+          <text>复习</text>
+        </view>
+        <view class="action-chip danger" @click="markWrong">
+          <uni-icons type="closeempty" size="18" color="#fff" />
+          <text>标记错题</text>
+        </view>
+      </view>
+
+      <view class="meta-row">
+        <text>进度：{{ practicePosition }}</text>
+        <text>状态：{{ masteryLabel(currentWord.status) }}</text>
+      </view>
+      <view class="meta-row" v-if="pronunciationState.error">
+        <text class="error-text">{{ pronunciationState.error }}</text>
+      </view>
+
+      <view class="navigation">
+        <view class="nav-btn ghost" @click="switchWord('prev')">上一词</view>
+        <view class="nav-btn primary" @click="switchWord('next')">下一词</view>
+      </view>
+    </view>
+    <view v-else class="empty-block">
+      <uni-icons type="info" size="28" color="#8c8c8c" />
+      <text>暂无可练单词，请切换单词书或添加数据</text>
+    </view>
+
+    <uni-popup ref="drawerRef" type="bottom" :mask-click="true" @change="onDrawerChange">
+      <view class="drawer-panel">
+        <view class="drawer-header">
+          <text class="drawer-title">单词列表</text>
+          <view class="drawer-close" @click="closeListDrawer">
+            <uni-icons type="closeempty" size="18" color="#4b5563" />
+          </view>
+        </view>
+        <view class="drawer-subtitle">点击可跳转当前练习 · 分页加载避免卡顿</view>
+        <scroll-view
+          scroll-y
+          class="drawer-scroll"
+          :lower-threshold="60"
+          @scrolltolower="loadMoreDrawer"
+        >
+          <uni-list>
+            <uni-list-item
+              v-for="word in drawerState.list"
+              :key="word.id"
+              :title="word.word"
+              :note="word.translation"
+              :rightText="masteryLabel(word.status)"
+              clickable
+              @click="jumpToWord(word.id)"
+            >
+              <template v-slot:header>
+                <view class="list-icon" :class="{ fav: word.is_favorite }">
+                  <uni-icons :type="word.is_favorite ? 'star' : 'sound'" size="18" color="#fff" />
+                </view>
+              </template>
+            </uni-list-item>
+          </uni-list>
+          <view class="drawer-footer">
+            <view v-if="drawerState.loading" class="drawer-tip">加载中...</view>
+            <view v-else-if="drawerState.finished" class="drawer-tip">已加载全部</view>
+            <view v-else class="drawer-tip">上拉加载更多</view>
+          </view>
+        </scroll-view>
+      </view>
+    </uni-popup>
+
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">收藏夹</text>
+        <text class="section-tip">优先复习已收藏单词</text>
+      </view>
+      <view v-if="favoriteWords.length" class="chip-list">
+        <view class="chip" v-for="word in favoriteWords" :key="word.id" @click="jumpToWord(word.id)">
+          <text class="chip-title">{{ word.word }}</text>
+          <text class="chip-desc">{{ word.translation }}</text>
+        </view>
+      </view>
+      <view v-else class="empty-block">
+        <uni-icons type="star" size="24" color="#f7b500" />
+        <text>暂无收藏，练习时点击收藏按钮即可加入</text>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">错题本</text>
+        <text class="section-tip">标记错题可优先复习</text>
+      </view>
+      <view v-if="wrongWords.length" class="chip-list">
+        <view class="chip danger" v-for="word in wrongWords" :key="word.id" @click="jumpToWord(word.id)">
+          <text class="chip-title">{{ word.word }}</text>
+          <text class="chip-desc">{{ word.translation }}</text>
+        </view>
+      </view>
+      <view v-else class="empty-block">
+        <uni-icons type="closeempty" size="24" color="#ff6b6b" />
+        <text>暂无错题，练习中点击“标记错题”即可记录</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import { wordBank, wordIds } from "@/utils/wordBank.js"
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import request from '@/utils/request.js'
+import { API_ENDPOINTS } from '@/utils/constants.js'
 
-const WORD_PROGRESS_KEY = 'WORD_PRACTICE_PROGRESS'
-const PAGE_SIZE = 30
-
-const allowedWordIds = new Set(wordIds)
-
-const readProgress = () => {
-  try {
-    const snapshot = uni.getStorageSync(WORD_PROGRESS_KEY) || {}
-    const normalize = (list) => Array.isArray(list) ? list.filter((id) => allowedWordIds.has(id)) : []
-    return {
-      favorites: normalize(snapshot.favorites),
-      mastered: normalize(snapshot.mastered),
-      review: normalize(snapshot.review)
-    }
-  } catch (error) {
-    console.warn('读取单词进度失败', error)
-    return { favorites: [], mastered: [], review: [] }
+const state = reactive({
+  wordBooks: [],
+  selectedBook: null,
+  words: [],
+  summary: {
+    total: 0,
+    mastered: 0,
+    review: 0,
+    favorites: 0,
+    wrongs: 0,
+    last_word_entry_id: null,
+    last_word_order_index: null
+  },
+  practiceFilter: 'all',
+  paging: {
+    page: 1,
+    limit: 50,
+    total: 0,
+    loading: false,
+    finished: false
   }
-}
+})
 
-const persistProgress = (state) => {
-  uni.setStorageSync(WORD_PROGRESS_KEY, {
-    favorites: state.favorites,
-    mastered: state.mastered,
-    review: state.review
-  })
-}
+const drawerState = reactive({
+  visible: false,
+  list: [],
+  page: 1,
+  limit: 50,
+  total: 0,
+  loading: false,
+  finished: false
+})
 
-const progressState = reactive(readProgress())
-
-const wordPracticeList = ref(
-  wordBank.map((item) => ({
-    ...item,
-    bookmarked: progressState.favorites.includes(item.id),
-    mastery: progressState.mastered.includes(item.id)
-      ? 'mastered'
-      : progressState.review.includes(item.id)
-        ? 'review'
-        : 'pending'
-  }))
-)
-
-const currentWordIndex = ref(0)
-const searchKeyword = ref('')
-const currentPage = ref(1)
+const currentIndex = ref(0)
 const pronunciationState = reactive({
   loading: false,
   error: ''
 })
 let audioContext = null
+const drawerRef = ref(null)
 
-const masteryMap = {
-  mastered: '已掌握',
-  review: '待复习',
-  pending: '待学习'
-}
+const practiceModes = [
+  { label: '全部', value: 'all' },
+  { label: '收藏', value: 'favorite' },
+  { label: '错题', value: 'wrong' }
+]
 
-const currentWord = computed(() => wordPracticeList.value[currentWordIndex.value] || null)
-const favoriteWords = computed(() => wordPracticeList.value.filter((item) => item.bookmarked))
-const reviewWords = computed(() => wordPracticeList.value.filter((item) => item.mastery === 'review'))
+const practiceList = computed(() => {
+  if (state.practiceFilter === 'favorite') {
+    return state.words.filter((item) => item.is_favorite)
+  }
+  if (state.practiceFilter === 'wrong') {
+    return state.words.filter((item) => item.wrong_count > 0)
+  }
+  return state.words
+})
+
+const currentWord = computed(() => {
+  if (!practiceList.value.length) return null
+  const idx = Math.min(currentIndex.value, practiceList.value.length - 1)
+  return practiceList.value[idx]
+})
+
+const favoriteWords = computed(() => state.words.filter((item) => item.is_favorite))
+const wrongWords = computed(() => state.words.filter((item) => item.wrong_count > 0))
+
 const learningRate = computed(() => {
-  if (!wordPracticeList.value.length) return 0
-  return Math.round((progressState.mastered.length / wordPracticeList.value.length) * 100)
+  if (!state.summary.total) return 0
+  return Math.round((state.summary.mastered / state.summary.total) * 100)
 })
-const heroStats = computed(() => [
-  { label: '词库总量', value: wordPracticeList.value.length },
-  { label: '已掌握', value: progressState.mastered.length },
-  { label: '收藏夹', value: progressState.favorites.length }
+
+const summaryStats = computed(() => [
+  { label: '词书总量', value: state.summary.total },
+  { label: '已掌握', value: state.summary.mastered },
+  { label: '待复习', value: state.summary.review },
+  { label: '收藏', value: state.summary.favorites }
 ])
 
-const filteredWords = computed(() => {
-  const keyword = searchKeyword.value.trim().toLowerCase()
-  if (!keyword) return wordPracticeList.value
-  return wordPracticeList.value.filter((item) => {
-    return item.english.toLowerCase().includes(keyword) || item.chinese.includes(keyword)
+const practicePosition = computed(() => {
+  if (!currentWord.value || !practiceList.value.length) return '-- / --'
+  return `${currentIndex.value + 1} / ${practiceList.value.length}`
+})
+
+const masteryLabel = (status) => {
+  if (status === 'mastered') return '已掌握'
+  if (status === 'review') return '待复习'
+  return '未学习'
+}
+
+const openBookPicker = () => {
+  uni.showActionSheet({
+    itemList: state.wordBooks.map((b) => b.name),
+    success: (res) => {
+      const book = state.wordBooks[res.tapIndex]
+      if (book) selectBook(book)
+    }
   })
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredWords.value.length / PAGE_SIZE)))
-const paginatedWords = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredWords.value.slice(start, start + PAGE_SIZE)
-})
-
-const nextWordPreview = computed(() => {
-  if (!wordPracticeList.value.length) return '--'
-  const nextIndex = (currentWordIndex.value + 1) % wordPracticeList.value.length
-  return wordPracticeList.value[nextIndex].english
-})
-
-const quickActions = computed(() => [
-  {
-    type: 'random',
-    name: '随机抽词',
-    desc: '灵感练习',
-    count: '',
-    icon: 'loop',
-    bg: '#7a86ff'
-  },
-  {
-    type: 'favorites',
-    name: '收藏夹',
-    desc: '重点词汇',
-    count: favoriteWords.value.length,
-    icon: 'star',
-    bg: '#ffb347'
-  },
-  {
-    type: 'review',
-    name: '待复习',
-    desc: '错题本',
-    count: reviewWords.value.length,
-    icon: 'closeempty',
-    bg: '#ff6b6b'
-  },
-  {
-    type: 'list',
-    name: '全部词汇',
-    desc: '跳至列表',
-    count: filteredWords.value.length,
-    icon: 'list',
-    bg: '#5ad8a6'
-  }
-])
-
-const updateProgressArrays = (wordId, type) => {
-  const removeFrom = (arr) => arr.filter((id) => id !== wordId)
-  if (type === 'mastered') {
-    progressState.mastered = Array.from(new Set([...removeFrom(progressState.mastered), wordId]))
-    progressState.review = removeFrom(progressState.review)
-  } else if (type === 'review') {
-    progressState.review = Array.from(new Set([...removeFrom(progressState.review), wordId]))
-    progressState.mastered = removeFrom(progressState.mastered)
-  }
-  persistProgress(progressState)
 }
 
-const toggleBookmark = (word) => {
-  word.bookmarked = !word.bookmarked
-  if (word.bookmarked) {
-    if (!progressState.favorites.includes(word.id)) {
-      progressState.favorites.push(word.id)
+const fetchBooks = async () => {
+  try {
+    const res = await request.get(API_ENDPOINTS.WORD.BOOKS, { limit: 50 }, { showLoading: false })
+    const books = res?.books || res?.data || res || []
+    state.wordBooks = books
+    if (!state.selectedBook && books.length) {
+      selectBook(books[0])
     }
-    uni.showToast({ title: '已加入收藏', icon: 'none' })
-  } else {
-    progressState.favorites = progressState.favorites.filter((id) => id !== word.id)
-    uni.showToast({ title: '已取消收藏', icon: 'none' })
-  }
-  persistProgress(progressState)
-}
-
-const markWord = (status) => {
-  if (!currentWord.value) return
-  currentWord.value.mastery = status
-  updateProgressArrays(currentWord.value.id, status)
-  const toastText = status === 'mastered' ? '标记为已掌握' : '已加入待复习'
-  uni.showToast({ title: toastText, icon: 'none' })
-  switchWord('next')
-}
-
-const switchWord = (direction) => {
-  if (!wordPracticeList.value.length) return
-  if (direction === 'next') {
-    currentWordIndex.value = (currentWordIndex.value + 1) % wordPracticeList.value.length
-  } else {
-    currentWordIndex.value =
-      (currentWordIndex.value - 1 + wordPracticeList.value.length) % wordPracticeList.value.length
-  }
-  pronunciationState.error = ''
-}
-
-const changePage = (direction) => {
-  if (direction === 'prev' && currentPage.value > 1) {
-    currentPage.value -= 1
-  }
-  if (direction === 'next' && currentPage.value < totalPages.value) {
-    currentPage.value += 1
+  } catch (error) {
+    console.error('获取单词书失败', error)
+    uni.showToast({ title: '获取单词书失败', icon: 'none' })
   }
 }
 
-const resetFilters = () => {
-  searchKeyword.value = ''
-  currentPage.value = 1
+const selectBook = async (book) => {
+  state.selectedBook = book
+  currentIndex.value = 0
+  await loadBookData()
 }
 
-const onSearchConfirm = () => {
-  currentPage.value = 1
+// 抽屉列表分页
+const openListDrawer = async () => {
+  drawerRef.value?.open()
+  drawerState.visible = true
+  if (!drawerState.list.length) {
+    await loadDrawerPage(1, false)
+  }
 }
 
-const clearSearch = () => {
-  searchKeyword.value = ''
+const closeListDrawer = () => {
+  drawerRef.value?.close()
 }
 
-watch(searchKeyword, () => {
-  currentPage.value = 1
+const onDrawerChange = (e) => {
+  drawerState.visible = !!e.show
+}
+
+const loadDrawerPage = async (page = 1, append = false) => {
+  if (!state.selectedBook) return
+  if (drawerState.loading) return
+  drawerState.loading = true
+  try {
+    const res = await request.get(
+      `${API_ENDPOINTS.WORD.BOOK_WORDS}/${state.selectedBook.id}/words`,
+      { page, limit: drawerState.limit },
+      { showLoading: false }
+    )
+    const list = (res?.list || res?.words || res || []).map(normalizeWord)
+    if (append) {
+      drawerState.list = drawerState.list.concat(list)
+    } else {
+      drawerState.list = list
+    }
+    drawerState.page = page
+    drawerState.total = res?.total || drawerState.list.length
+    drawerState.finished = drawerState.list.length >= drawerState.total
+  } catch (error) {
+    console.error('抽屉列表加载失败', error)
+    uni.showToast({ title: '列表加载失败', icon: 'none' })
+  } finally {
+    drawerState.loading = false
+  }
+}
+
+const loadMoreDrawer = async () => {
+  if (drawerState.finished || drawerState.loading) return
+  await loadDrawerPage(drawerState.page + 1, true)
+}
+
+const normalizeWord = (item) => ({
+  ...item,
+  is_favorite: !!item.is_favorite,
+  wrong_count: Number(item.wrong_count || 0),
+  status: item.status || 'pending'
 })
 
-const handleQuickAction = (action) => {
-  if (action.type === 'list') {
-    uni.pageScrollTo({
-      selector: '.word-list-section',
-      duration: 300
-    })
-    return
-  }
-  if (action.type === 'random') {
-    jumpRandom()
-    return
-  }
-  if (action.type === 'favorites') {
-    if (!favoriteWords.value.length) {
-      uni.showToast({ title: '暂无收藏', icon: 'none' })
-      return
+const fetchPracticeWords = async (page = 1, append = false) => {
+  if (!state.selectedBook) return
+  if (state.paging.loading) return
+  state.paging.loading = true
+  try {
+    const res = await request.get(
+      `${API_ENDPOINTS.WORD.BOOK_WORDS}/${state.selectedBook.id}/words`,
+      { page, limit: state.paging.limit },
+      { showLoading: false }
+    )
+    const list = (res?.list || res?.words || res || []).map(normalizeWord)
+    if (append) {
+      state.words = state.words.concat(list)
+    } else {
+      state.words = list
     }
-    jumpToWord(favoriteWords.value[0].id)
-    uni.showToast({ title: '已定位到收藏单词', icon: 'none' })
-    return
+    state.paging.page = page
+    state.paging.total = res?.total || state.summary.total || state.words.length
+    state.paging.finished = state.words.length >= state.paging.total
+  } catch (error) {
+    console.error('获取单词失败', error)
+    uni.showToast({ title: '单词加载失败', icon: 'none' })
+  } finally {
+    state.paging.loading = false
   }
-  if (action.type === 'review') {
-    if (!reviewWords.value.length) {
-      uni.showToast({ title: '暂无待复习', icon: 'none' })
-      return
+}
+
+const loadBookData = async () => {
+  if (!state.selectedBook) return
+  // 重置分页
+  state.paging.page = 1
+  state.paging.total = 0
+  state.paging.finished = false
+  state.words = []
+  drawerState.list = []
+  drawerState.page = 1
+  drawerState.total = 0
+  drawerState.finished = false
+  try {
+    const bookId = state.selectedBook.id
+    const [summaryRes, stateRes] = await Promise.all([
+      request.get(`${API_ENDPOINTS.WORD.PROGRESS}/${bookId}/progress`, {}, { showLoading: false }),
+      request.get(`${API_ENDPOINTS.WORD.STATE}/${bookId}/state`, {}, { showLoading: false })
+    ])
+
+    state.summary = {
+      total: summaryRes?.total || 0,
+      mastered: summaryRes?.mastered || 0,
+      review: summaryRes?.review || 0,
+      favorites: summaryRes?.favorites || 0,
+      wrongs: summaryRes?.wrongs || 0,
+      last_word_entry_id: summaryRes?.last_word_entry_id || null,
+      last_word_order_index: summaryRes?.last_word_order_index || null
     }
-    jumpToWord(reviewWords.value[0].id)
-    uni.showToast({ title: '已定位到待复习单词', icon: 'none' })
+
+    // 根据上次位置确定初始页
+    const initialPage =
+      state.summary.last_word_order_index && state.paging.limit
+        ? Math.ceil(state.summary.last_word_order_index / state.paging.limit)
+        : 1
+    await fetchPracticeWords(initialPage, false)
+
+    if (stateRes?.last_word_entry_id) {
+      const idx = state.words.findIndex((w) => w.id === stateRes.last_word_entry_id)
+      currentIndex.value = idx >= 0 ? idx : 0
+    } else {
+      currentIndex.value = 0
+    }
+  } catch (error) {
+    console.error('加载词书数据失败', error)
+    uni.showToast({ title: '加载词书失败', icon: 'none' })
   }
+}
+
+const changePracticeFilter = (mode) => {
+  state.practiceFilter = mode
+  currentIndex.value = 0
 }
 
 const jumpRandom = () => {
-  if (!filteredWords.value.length) return
-  const randomWord = filteredWords.value[Math.floor(Math.random() * filteredWords.value.length)]
-  jumpToWord(randomWord.id)
+  if (!practiceList.value.length) return
+  const randomIndex = Math.floor(Math.random() * practiceList.value.length)
+  currentIndex.value = randomIndex
+  savePracticeState()
 }
 
 const jumpToWord = (wordId) => {
-  const index = wordPracticeList.value.findIndex((item) => item.id === wordId)
-  if (index !== -1) {
-    jumpToPageForWord(wordId)
-    currentWordIndex.value = index
-    pronunciationState.error = ''
+  const idx = practiceList.value.findIndex((w) => w.id === wordId)
+  if (idx !== -1) {
+    currentIndex.value = idx
+    savePracticeState()
+    uni.showToast({ title: '已切换到该单词', icon: 'none' })
+    closeListDrawer()
+  }
+}
+
+const updateProgressLocal = (wordId, updater) => {
+  const target = state.words.find((w) => w.id === wordId)
+  if (target) {
+    updater(target)
+  }
+}
+
+const updateWordProgress = async (word, payload) => {
+  if (!state.selectedBook) return
+  await request.post(
+    `${API_ENDPOINTS.WORD.PROGRESS}/${state.selectedBook.id}/progress`,
+    { word_entry_id: word.id, ...payload },
+    { showLoading: false }
+  )
+}
+
+const markWord = async (status) => {
+  if (!currentWord.value) return
+  try {
+    await updateWordProgress(currentWord.value, { status })
+    updateProgressLocal(currentWord.value.id, (item) => {
+      item.status = status
+    })
+    refreshSummaryCounters()
+    switchWord('next')
+  } catch (error) {
+    console.error('更新状态失败', error)
+    uni.showToast({ title: '更新状态失败', icon: 'none' })
+  }
+}
+
+const markWrong = async () => {
+  if (!currentWord.value) return
+  try {
+    await updateWordProgress(currentWord.value, { wrong_delta: 1, status: 'review' })
+    updateProgressLocal(currentWord.value.id, (item) => {
+      item.wrong_count = Number(item.wrong_count || 0) + 1
+      item.status = 'review'
+    })
+    refreshSummaryCounters()
+    uni.showToast({ title: '已加入错题本', icon: 'none' })
+  } catch (error) {
+    console.error('标记错题失败', error)
+    uni.showToast({ title: '标记失败', icon: 'none' })
+  }
+}
+
+const toggleFavorite = async (word) => {
+  try {
+    const next = !word.is_favorite
+    await updateWordProgress(word, { is_favorite: next })
+    updateProgressLocal(word.id, (item) => {
+      item.is_favorite = next
+    })
+    refreshSummaryCounters()
+    uni.showToast({ title: next ? '已收藏' : '已取消收藏', icon: 'none' })
+  } catch (error) {
+    console.error('收藏失败', error)
+    uni.showToast({ title: '收藏失败', icon: 'none' })
+  }
+}
+
+const refreshSummaryCounters = () => {
+  state.summary.mastered = state.words.filter((w) => w.status === 'mastered').length
+  state.summary.review = state.words.filter((w) => w.status === 'review').length
+  state.summary.favorites = state.words.filter((w) => w.is_favorite).length
+  state.summary.wrongs = state.words.filter((w) => w.wrong_count > 0).length
+}
+
+const switchWord = async (direction) => {
+  if (!practiceList.value.length) return
+  if (direction === 'next') {
+    if (currentIndex.value + 1 >= practiceList.value.length && !state.paging.finished) {
+      await fetchPracticeWords(state.paging.page + 1, true)
+    }
+    currentIndex.value = Math.min(currentIndex.value + 1, practiceList.value.length - 1)
+  } else {
+    currentIndex.value =
+      (currentIndex.value - 1 + practiceList.value.length) % practiceList.value.length
+  }
+  savePracticeState()
+}
+
+const savePracticeState = async () => {
+  if (!state.selectedBook) return
+  const word = currentWord.value
+  try {
+    await request.post(
+      `${API_ENDPOINTS.WORD.STATE}/${state.selectedBook.id}/state`,
+      {
+        last_word_entry_id: word?.id || null,
+        last_word_order_index: word?.order_index || null
+      },
+      { showLoading: false }
+    )
+  } catch (error) {
+    console.warn('保存学习位置失败', error)
   }
 }
 
@@ -417,53 +593,50 @@ const setupAudioContext = () => {
   if (audioContext || !uni.createInnerAudioContext) return
   audioContext = uni.createInnerAudioContext()
   audioContext.obeyMuteSwitch = false
-  audioContext.onStop(() => {
-    pronunciationState.error = ''
-  })
   audioContext.onError((err) => {
-    console.error('音频播放失败', err)
-    pronunciationState.error = '音频播放失败，请检查网络'
+    pronunciationState.error = '发音播放失败，请稍后重试'
+    console.error('音频错误', err)
   })
 }
 
 const playPronunciation = async () => {
   if (!currentWord.value) return
-  if (!uni.createInnerAudioContext) {
-    uni.showToast({ title: '当前环境不支持音频', icon: 'none' })
-    return
-  }
   pronunciationState.error = ''
   pronunciationState.loading = true
-  try {
-    setupAudioContext()
-    if (!audioContext) {
-      pronunciationState.error = '发音组件初始化失败'
+  setupAudioContext()
+  if (!audioContext) {
+    pronunciationState.error = '当前环境不支持音频播放'
+    pronunciationState.loading = false
+    return
+  }
+  const text = encodeURIComponent(currentWord.value.word)
+  const audioUrls = [
+    `https://tts.baidu.com/text2audio?lan=en&ie=UTF-8&text=${text}`,
+    `https://dict.youdao.com/dictvoice?type=2&audio=${text}`,
+    `https://tts.iciba.com/tts.php?text=${text}`
+  ]
+
+  const tryPlay = (index) => {
+    if (index >= audioUrls.length) {
+      pronunciationState.error = '发音接口异常，请稍后重试'
+      pronunciationState.loading = false
       return
     }
-    const audioUrl = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(currentWord.value.english)}`
-    audioContext.src = audioUrl
+    audioContext.src = audioUrls[index]
     audioContext.play()
-  } catch (error) {
-    console.error('播放发音失败', error)
-    pronunciationState.error = '发音接口异常，请稍后再试'
-  } finally {
-    pronunciationState.loading = false
+    audioContext.onError(() => {
+      tryPlay(index + 1)
+    })
+    audioContext.onStop(() => {
+      pronunciationState.loading = false
+    })
   }
-}
 
-const jumpToPageForWord = (wordId) => {
-  const index = filteredWords.value.findIndex((item) => item.id === wordId)
-  if (index === -1) return
-  currentPage.value = Math.floor(index / PAGE_SIZE) + 1
+  tryPlay(0)
 }
-
-watch(filteredWords, () => {
-  if ((currentPage.value - 1) * PAGE_SIZE >= filteredWords.value.length) {
-    currentPage.value = 1
-  }
-})
 
 onMounted(() => {
+  fetchBooks()
   setupAudioContext()
 })
 
@@ -479,24 +652,25 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .word-practice-page {
   min-height: 100vh;
-  background: #f5f7fb;
-  padding-bottom: 60rpx;
+  background: linear-gradient(180deg, #f6f8ff 0%, #f9fafb 100%);
+  padding: 12rpx 20rpx 80rpx;
+  box-sizing: border-box;
 }
 
 .hero-card {
-  margin: 20rpx;
-  background: linear-gradient(135deg, #1d4ed8, #5b21b6);
-  border-radius: 24rpx;
-  padding: 40rpx;
+  background: linear-gradient(135deg, #0f62fe, #6b8bff);
+  border-radius: 20rpx;
+  padding: 26rpx 22rpx 30rpx;
   color: #fff;
-  box-shadow: 0 16rpx 40rpx rgba(29, 78, 216, 0.35);
+  box-shadow: 0 16rpx 40rpx rgba(15, 98, 254, 0.35);
+  margin: 8rpx 0 16rpx;
 }
 
-.hero-header {
+.hero-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .hero-title {
@@ -508,31 +682,49 @@ onUnmounted(() => {
   display: block;
   margin-top: 8rpx;
   font-size: 26rpx;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-.hero-progress {
-  font-size: 48rpx;
-  font-weight: 700;
+.hero-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.hero-chip {
+  background: #fff;
+  color: #0f62fe;
+  border-radius: 999rpx;
+  padding: 12rpx 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 26rpx;
+  box-shadow: 0 8rpx 18rpx rgba(255, 255, 255, 0.2);
+}
+
+.hero-chip.ghost {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: none;
 }
 
 .hero-stats {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 30rpx;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12rpx;
+  margin-top: 20rpx;
 }
 
-.hero-stat {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 18rpx;
-  padding: 20rpx;
+.stat {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 16rpx;
+  padding: 16rpx;
   text-align: center;
 }
 
 .stat-value {
   font-size: 34rpx;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .stat-label {
@@ -542,113 +734,124 @@ onUnmounted(() => {
   opacity: 0.9;
 }
 
-.search-section {
-  margin: 0 20rpx 10rpx;
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+.progress-line {
+  margin-top: 20rpx;
 }
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: #f0f4ff;
-  border-radius: 999rpx;
-  padding: 0 20rpx;
-}
-
-.search-input {
-  flex: 1;
-  height: 70rpx;
-  font-size: 28rpx;
-  padding: 0 10rpx;
-}
-
-.clear-btn {
-  width: 60rpx;
-  height: 60rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.filter-row {
-  margin-top: 10rpx;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.progress-text {
+  display: block;
+  margin-top: 8rpx;
   font-size: 24rpx;
-  color: #666;
+  opacity: 0.85;
 }
 
-.filter-actions {
-  display: flex;
-  gap: 20rpx;
-}
-
-.filter-btn {
-  color: #0f62fe;
-}
-
-.action-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.action-item {
+.section-card {
   background: #fff;
   border-radius: 18rpx;
   padding: 20rpx;
+  margin: 10rpx 0 14rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-head {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 18rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  gap: 12rpx;
 }
 
-.action-icon {
-  width: 60rpx;
-  height: 60rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #111;
 }
 
-.action-info {
-  flex: 1;
-}
-
-.action-name {
-  font-size: 30rpx;
-  font-weight: 600;
-}
-
-.action-desc {
-  display: block;
+.section-tip {
   font-size: 24rpx;
   color: #8c8c8c;
 }
 
-.action-count {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #111;
+.book-scroll {
+  margin-top: 16rpx;
+  white-space: nowrap;
 }
 
-.word-detail,
-.favorites-section,
-.review-section,
-.word-list-section {
-  margin: 20rpx;
+.book-card {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6rpx;
+  background: #f6f8ff;
+  border-radius: 14rpx;
+  padding: 18rpx 20rpx;
+  margin-right: 12rpx;
+  min-width: 220rpx;
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.book-card.active {
+  background: linear-gradient(135deg, #0f62fe, #5b8dff);
+  color: #fff;
+}
+
+.book-name {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.book-meta {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+.pill-group {
+  display: flex;
+  gap: 12rpx;
+}
+
+.pill {
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: #f1f4ff;
+  color: #0f62fe;
+  font-size: 26rpx;
+}
+
+.pill.active {
+  background: #0f62fe;
+  color: #fff;
+}
+
+.mode-actions {
+  margin-top: 16rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  border-radius: 14rpx;
+  padding: 18rpx 0;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.mode-btn.primary {
+  background: linear-gradient(135deg, #0f62fe, #00b4d8);
+  color: #fff;
+}
+
+.mode-btn.ghost {
+  border: 2rpx solid #d6e4ff;
+  color: #0f62fe;
 }
 
 .word-card {
   background: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+  border-radius: 18rpx;
 }
 
 .word-head {
@@ -660,82 +863,91 @@ onUnmounted(() => {
 .word-text {
   font-size: 46rpx;
   font-weight: 700;
-  color: #1f2933;
+  color: #111;
 }
 
-.word-chinese {
+.word-phonetic {
   display: block;
-  font-size: 30rpx;
+  font-size: 26rpx;
   color: #4b5563;
-  margin-top: 8rpx;
+}
+
+.word-translation {
+  display: block;
+  font-size: 28rpx;
+  color: #4b5563;
+  margin-top: 6rpx;
 }
 
 .word-tag {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 16rpx;
+  min-width: 100rpx;
+  text-align: center;
   background: #eef2ff;
   color: #4c51bf;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34rpx;
+  border-radius: 16rpx;
+  padding: 12rpx 0;
   font-weight: 600;
 }
 
 .word-actions {
-  margin: 24rpx 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: 12rpx;
+  margin: 18rpx 0;
 }
 
-.action-pill {
+.action-chip {
   flex: 1;
-  min-width: 220rpx;
-  border-radius: 999rpx;
+  min-width: 200rpx;
   background: linear-gradient(135deg, #0f62fe, #5b8dff);
   color: #fff;
-  padding: 18rpx;
+  border-radius: 12rpx;
+  padding: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
+  gap: 8rpx;
   font-size: 26rpx;
 }
 
-.word-meta {
+.action-chip.warn {
+  background: linear-gradient(135deg, #ffb347, #ff9f7b);
+}
+
+.action-chip.danger {
+  background: linear-gradient(135deg, #ff6b6b, #f94d63);
+}
+
+.meta-row {
   display: flex;
   justify-content: space-between;
   font-size: 24rpx;
   color: #666;
+  margin-top: 8rpx;
 }
 
-.audio-error {
-  margin-top: 10rpx;
-  font-size: 24rpx;
+.error-text {
   color: #ff4d4f;
 }
 
-.word-navigation {
+.navigation {
   display: flex;
-  gap: 20rpx;
-  margin-top: 24rpx;
+  gap: 12rpx;
+  margin-top: 16rpx;
 }
 
 .nav-btn {
   flex: 1;
   text-align: center;
-  padding: 24rpx 0;
-  border-radius: 16rpx;
-  font-size: 30rpx;
+  padding: 20rpx 0;
+  border-radius: 14rpx;
+  font-size: 28rpx;
   font-weight: 600;
 }
 
 .nav-btn.primary {
-  background: linear-gradient(135deg, #007aff, #00b4d8);
+  background: linear-gradient(135deg, #0f62fe, #00b4d8);
   color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(0, 122, 255, 0.3);
 }
 
 .nav-btn.ghost {
@@ -743,132 +955,113 @@ onUnmounted(() => {
   color: #0f62fe;
 }
 
-.next-preview {
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  text-align: right;
-  color: #666;
-}
-
-.word-empty {
-  min-height: 200rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  color: #999;
-  font-size: 28rpx;
-}
-
-.favorite-chips {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.favorite-chip {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 18rpx 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-}
-
-.chip-word {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.chip-note {
-  display: block;
-  font-size: 24rpx;
-  color: #6b7280;
-}
-
-.review-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.review-item {
-  background: #fff5f5;
-  border-radius: 16rpx;
-  padding: 18rpx 22rpx;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.review-word {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #b41c1c;
-}
-
-.review-definition {
-  display: block;
-  font-size: 24rpx;
-  color: #8c6d6d;
-}
-
-.review-badge {
-  padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-  background: #ff6b6b;
-  color: #fff;
-  font-size: 24rpx;
-}
-
-.empty-state {
-  min-height: 160rpx;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 30rpx 20rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10rpx;
-  color: #8c8c8c;
+.list-card {
+  padding: 0 0 12rpx 0;
 }
 
 .list-icon {
   width: 60rpx;
   height: 60rpx;
-  background: #f0f9ff;
   border-radius: 12rpx;
+  background: #0f62fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20rpx;
+  margin-left: 16rpx;
 }
 
-.pagination {
-  margin-top: 20rpx;
+.list-icon.fav {
+  background: #ffb347;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.chip {
+  flex: 1 1 calc(50% - 12rpx);
+  min-width: 300rpx;
+  background: #f8f9fa;
+  border-radius: 14rpx;
+  padding: 14rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.chip.danger {
+  background: #fff5f5;
+}
+
+.chip-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111;
+}
+
+.chip-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.empty-block {
+  min-height: 140rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-}
-
-.page-btn {
-  flex: 1;
-  text-align: center;
-  padding: 18rpx 0;
-  border-radius: 14rpx;
-  background: #eef2ff;
-  color: #1d4ed8;
+  justify-content: center;
+  gap: 10rpx;
+  color: #8c8c8c;
   font-size: 26rpx;
 }
 
-.page-btn.disabled {
-  opacity: 0.5;
+.drawer-panel {
+  background: #fff;
+  border-top-left-radius: 20rpx;
+  border-top-right-radius: 20rpx;
+  padding: 20rpx;
+  height: 70vh;
+  box-shadow: 0 -8rpx 30rpx rgba(0, 0, 0, 0.08);
 }
 
-.page-info {
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #111;
+}
+
+.drawer-close {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-subtitle {
   font-size: 24rpx;
-  color: #666;
+  color: #6b7280;
+  margin-top: 6rpx;
+  margin-bottom: 12rpx;
+}
+
+.drawer-scroll {
+  height: calc(70vh - 120rpx);
+}
+
+.drawer-footer {
+  text-align: center;
+  padding: 12rpx 0 6rpx;
+  color: #8c8c8c;
+  font-size: 24rpx;
 }
 </style>

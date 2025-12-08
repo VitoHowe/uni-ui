@@ -4,8 +4,8 @@
   "backgroundColor": "#f5f7fb",
   "usingComponents": {
     "uni-icons": "../../uni_modules/uni-icons/components/uni-icons/uni-icons",
-    "uni-section": "../../uni_modules/uni-section/components/uni-section/uni-section",
     "uni-list-item": "../../uni_modules/uni-list/components/uni-list-item/uni-list-item",
-    "uni-list": "../../uni_modules/uni-list/components/uni-list/uni-list"
+    "uni-list": "../../uni_modules/uni-list/components/uni-list/uni-list",
+    "uni-popup": "../../uni_modules/uni-popup/components/uni-popup/uni-popup"
   }
 }

@@ -80,13 +80,21 @@
   margin: 20rpx;
 }
 .word-entry-card.data-v-3f273c1e {
-  background: linear-gradient(135deg, #0f62fe, #6b8bff);
   border-radius: 20rpx;
-  padding: 32rpx;
-  color: #fff;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 28rpx 24rpx;
+  color: #1f2937;
+  min-height: 150rpx;
   display: flex;
-  flex-direction: column;
-  gap: 24rpx;
+  align-items: center;
+  justify-content: space-between;
+  border: 2rpx solid #e5e7eb;
+  box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+.simple-card.data-v-3f273c1e {
+  background: linear-gradient(135deg, #f3f7ff 0%, #e4edff 100%);
 }
 .entry-title.data-v-3f273c1e {
   font-size: 36rpx;
@@ -97,46 +105,45 @@
   opacity: 0.9;
   margin-top: 6rpx;
 }
-.entry-stats.data-v-3f273c1e {
-  display: flex;
-  gap: 24rpx;
-  margin-top: 20rpx;
-}
-.stat-item.data-v-3f273c1e {
+.entry-left.data-v-3f273c1e {
   flex: 1;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 16rpx;
-  padding: 16rpx;
-  text-align: center;
-}
-.stat-value.data-v-3f273c1e {
-  font-size: 34rpx;
-  font-weight: 600;
-}
-.stat-label.data-v-3f273c1e {
-  display: block;
-  font-size: 24rpx;
-  margin-top: 6rpx;
-  opacity: 0.85;
-}
-.entry-action.data-v-3f273c1e {
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 8rpx;
 }
-.entry-btn.data-v-3f273c1e {
-  padding: 18rpx 48rpx;
-  background: #fff;
-  color: #0f62fe;
+.entry-badge.data-v-3f273c1e {
+  align-self: flex-start;
+  padding: 6rpx 14rpx;
+  background: #0f62fe;
+  color: #fff;
   border-radius: 999rpx;
-  font-size: 30rpx;
-  font-weight: 600;
-  box-shadow: 0 8rpx 16rpx rgba(15, 98, 254, 0.3);
+  font-size: 22rpx;
 }
-.entry-tip.data-v-3f273c1e {
-  font-size: 24rpx;
-  opacity: 0.9;
+.entry-tags.data-v-3f273c1e {
+  display: flex;
+  gap: 10rpx;
+  margin-top: 8rpx;
+}
+.tag.data-v-3f273c1e {
+  padding: 8rpx 14rpx;
+  background: #e0e7ff;
+  color: #374151;
+  border-radius: 10rpx;
+  font-size: 22rpx;
+}
+.entry-btn-ghost.data-v-3f273c1e {
+  padding: 16rpx 20rpx;
+  background: #ffffff;
+  color: #0f62fe;
+  border-radius: 14rpx;
+  border: 2rpx solid #0f62fe;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  box-shadow: 0 6rpx 16rpx rgba(15, 98, 254, 0.12);
 }
 .recent-study.data-v-3f273c1e {
   margin: 20rpx;
