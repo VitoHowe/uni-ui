@@ -1,34 +1,31 @@
 {
+  "task": "定位并修复 word-detail 页面的 `/api/word-books/{id}/words` 双请求",
+  "timestamp": "2025-11-16T22:52:45+08:00",
   "known": [
-    "后端提供 `/api/word-books` 列表与 `/api/word-books/{id}/words` 全量返回数据，字段包含 word、translation、extra 等。",
-    "现有 word-practice 页面完全依赖本地 `wordBank`，进度通过 `uni.setStorageSync` 以 wordId 记录。",
-    "项目里有 `utils/request.js` 封装可复用，也已定义全局 API 常量文件。"
+    "`useWordPracticeStore.selectBook(bookId)` 默认 `preloadWords=true`，在 state 变化后会 `await loadWords(bookId)` 并填充 `wordsByBook`。",
+    "word-detail 页面在 `watch(() => store.selectedBookId)` 与 `handleSelectBook` 中也会显式调用 `store.loadWords`。",
+    "`fetchWordBookWords` 会直接命中 `/word-books/{id}/words`，没有内部节流或去重机制。"
   ],
   "unknown": [
-    "收藏/错词/掌握的状态需要与后端同步吗？若需要，接口和字段要求未提供。",
-    "多单词书场景下，前端需要何种默认策略（例如默认选择首本？需要最近一次记忆书ID？）。",
-    "进度保存涉及到统计哪些数据（当前位置、掌握数量、错词列表等）与如何跨端同步。"
+    "word-detail 初始化（`onLoad -> initDetailPage`）到底在哪些步骤触发 `loadWords`？watch、fallback、store action 的时序是怎样的？",
+    "WordBookSelector -> `handleSelectBook` 是否导致双请求？有没有必要保留两次调用或加入 guard？",
+    "除 selector/watch 外是否还有其它入口会直接调用 `store.loadWords`？例如刷新按钮、quick actions？"
   ],
   "prioritized_questions": [
     {
+      "id": "WD-1",
       "priority": "high",
-      "question": "进度保存与收藏/错词等状态是否需要后端 API？如果后端暂未提供，需要怎样的契约以便文档说明。"
+      "question": "word-detail 初始化为什么会在短时间内触发两次 `/word-books/{id}/words` 请求？"
     },
     {
+      "id": "WD-2",
       "priority": "high",
-      "question": "单词书选择组件的 UX 流程（在原页面内部弹窗还是独立页）以及初始加载哪本书的策略。"
+      "question": "WordBookSelector 回调（`handleSelectBook`）是否导致额外的重复请求？"
     },
     {
+      "id": "WD-3",
       "priority": "medium",
-      "question": "一次性返回整本单词的性能及分页策略：是否需要本地分页还是后端分页，需要明确。"
-    },
-    {
-      "priority": "medium",
-      "question": "音频与发音数据来源是否提供新字段，如果没有需要用第三方 API 还是保持静态？"
-    },
-    {
-      "priority": "low",
-      "question": "现有 `wordPractice.spec.js` 测试是否仍需保留/拓展到调用真实 API mock。"
+      "question": "是否还存在其它按钮/刷新逻辑直接调用 `store.loadWords` 需要同步梳理？"
     }
   ]
 }

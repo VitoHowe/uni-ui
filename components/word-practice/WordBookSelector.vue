@@ -29,7 +29,7 @@
             <text>{{ formatDate(book.createdAt) }}</text>
           </view>
           <view class="book-actions">
-            <text class="badge" v-if="book.id === selectedBookId">当前词书</text>
+            <text class="badge" v-if="isActiveBook(book.id)">当前词书</text>
             <button class="primary" v-else>设为当前</button>
           </view>
         </view>
@@ -65,6 +65,13 @@ const props = defineProps({
 
 defineEmits(['close', 'select'])
 
+const normalizeBookId = (value) => {
+  if (value === null || value === undefined) return null
+  return String(value)
+}
+
+const isActiveBook = (bookId) => normalizeBookId(bookId) === normalizeBookId(props.selectedBookId)
+
 const formatDate = (value) => {
   if (!value) return '刚刚'
   return new Date(value).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
@@ -87,7 +94,7 @@ const formatDate = (value) => {
 .selector-panel {
   width: 100%;
   max-height: 82vh;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%);
   border-radius: 40rpx 40rpx 0 0;
   padding: 30rpx 32rpx 40rpx;
   box-shadow: 0 -30rpx 60rpx rgba(15, 23, 42, 0.15);
@@ -139,7 +146,7 @@ const formatDate = (value) => {
   width: 60rpx;
   height: 60rpx;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: #eef2ff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -153,9 +160,10 @@ const formatDate = (value) => {
 .book-option {
   padding: 24rpx 26rpx;
   border-radius: 24rpx;
-  background: #f9f9ff;
+  background: #fff;
   border: 1px solid #eef2ff;
   margin-bottom: 20rpx;
+  box-shadow: 0 12rpx 24rpx rgba(15, 23, 42, 0.06);
 }
 
 .book-top {
@@ -172,7 +180,7 @@ const formatDate = (value) => {
 
 .book-lang {
   font-size: 24rpx;
-  color: #6366f1;
+  color: #4338ca;
 }
 
 .book-desc {
@@ -211,7 +219,7 @@ const formatDate = (value) => {
   border-radius: 16rpx;
   padding: 14rpx 28rpx;
   font-size: 26rpx;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: #fff;
 }
 

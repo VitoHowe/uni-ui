@@ -3,6 +3,12 @@ const common_vendor = require("../common/vendor.js");
 const services_wordBooks = require("../services/wordBooks.js");
 const utils_wordProgress = require("../utils/wordProgress.js");
 const LAST_BOOK_KEY = "WORD_PRACTICE_LAST_BOOK";
+const normalizeBookId = (value) => {
+  if (value === null || value === void 0)
+    return null;
+  return String(value);
+};
+const isSameBookId = (a, b) => normalizeBookId(a) === normalizeBookId(b);
 const useWordPracticeStore = common_vendor.defineStore("wordPractice", {
   state: () => ({
     books: [],
@@ -18,7 +24,7 @@ const useWordPracticeStore = common_vendor.defineStore("wordPractice", {
     progressByBook: {}
   }),
   getters: {
-    currentBook: (state) => state.books.find((book) => book.id === state.selectedBookId) || null,
+    currentBook: (state) => state.books.find((book) => isSameBookId(book.id, state.selectedBookId)) || null,
     currentWords: (state) => state.wordsByBook[state.selectedBookId] || [],
     currentWord(state) {
       const words = this.currentWords;
@@ -53,13 +59,15 @@ const useWordPracticeStore = common_vendor.defineStore("wordPractice", {
         this.books = books;
         this.booksTotal = total;
         this.booksPagination = pagination;
-        if (this.selectedBookId && books.some((book) => book.id === this.selectedBookId)) {
-          this.bootstrapProgress(this.selectedBookId);
+        const matchedBook = this.selectedBookId ? books.find((book) => isSameBookId(book.id, this.selectedBookId)) : null;
+        if (matchedBook) {
+          this.selectedBookId = matchedBook.id;
+          this.bootstrapProgress(matchedBook.id);
         } else if (books.length) {
           await this.selectBook(books[0].id, { preloadWords: false });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/wordPractice.js:68", "获取单词书列表失败", error);
+        common_vendor.index.__f__("error", "at stores/wordPractice.js:78", "获取单词书列表失败", error);
         this.booksError = error.message || "获取单词书失败";
       } finally {
         this.booksLoading = false;
@@ -69,17 +77,19 @@ const useWordPracticeStore = common_vendor.defineStore("wordPractice", {
       const { preloadWords = true } = options;
       if (!bookId)
         return;
-      const changed = this.selectedBookId !== bookId;
-      this.selectedBookId = bookId;
-      common_vendor.index.setStorageSync(LAST_BOOK_KEY, bookId);
-      this.bootstrapProgress(bookId);
-      if (preloadWords && (changed || !this.wordsByBook[bookId])) {
-        await this.loadWords(bookId);
+      const resolvedBook = this.books.find((book) => isSameBookId(book.id, bookId));
+      const nextBookId = resolvedBook ? resolvedBook.id : bookId;
+      const changed = !isSameBookId(this.selectedBookId, nextBookId);
+      this.selectedBookId = nextBookId;
+      common_vendor.index.setStorageSync(LAST_BOOK_KEY, nextBookId);
+      this.bootstrapProgress(nextBookId);
+      if (preloadWords && (changed || !this.wordsByBook[nextBookId])) {
+        await this.loadWords(nextBookId);
       } else if (preloadWords) {
-        const progress = this.progressByBook[bookId];
+        const progress = this.progressByBook[nextBookId];
         this.currentWordIndex = (progress == null ? void 0 : progress.lastCursor) || 0;
       } else {
-        const progress = this.progressByBook[bookId];
+        const progress = this.progressByBook[nextBookId];
         this.currentWordIndex = (progress == null ? void 0 : progress.lastCursor) || 0;
       }
     },
@@ -99,7 +109,7 @@ const useWordPracticeStore = common_vendor.defineStore("wordPractice", {
         const progress = this.progressByBook[targetId];
         this.currentWordIndex = Math.min(progress.lastCursor || 0, Math.max(words.length - 1, 0));
       } catch (error) {
-        common_vendor.index.__f__("error", "at stores/wordPractice.js:106", "加载单词列表失败", error);
+        common_vendor.index.__f__("error", "at stores/wordPractice.js:118", "加载单词列表失败", error);
         this.wordsError = error.message || "加载单词失败";
       } finally {
         this.wordsLoading = false;

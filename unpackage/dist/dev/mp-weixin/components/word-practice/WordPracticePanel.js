@@ -61,7 +61,7 @@ const _sfc_main = {
         i: common_vendor.p({
           type: "star",
           size: "18",
-          color: __props.isFavorite ? "#facc15" : "#fff"
+          color: __props.isFavorite ? "#f59e0b" : "#1d4ed8"
         }),
         j: common_vendor.t(__props.isFavorite ? "已收藏" : "收藏"),
         k: common_vendor.o(($event) => _ctx.$emit("toggle-favorite")),

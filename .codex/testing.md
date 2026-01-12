@@ -10,3 +10,16 @@
 - 单词练习页：手动验证搜索、随机抽词、分页（30 条/页）以及收藏、复习、发音降级提示；收藏/复习状态会写入本地存储并可在入口页读取。
 
 > 说明：当前仍为源码模式，未在真机运行，需上线前在小程序端复测音频播放与页面性能表现。
+
+---
+
+# 测试记录（2025-11-16 / Codex）
+
+## 单元测试
+- `node tests/wordPractice.spec.js`
+  - 目标：回归校验词库 JSON，确保本次仅修改前端逻辑不会破坏基础数据校验，同时确认测试脚本仍可运行。
+  - 结果：通过（输出“✅ 词库校验通过，共 480 条有效记录，其中 1 条重复已忽略”）
+
+## 逻辑验证
+- 代码检查：`pages/word-practice/word-detail.vue` 仅剩 `initDetailPage` Fallback 处调用 `store.loadWords`；`watch(selectedBookId)` 已只负责重置分页/搜索，`handleSelectBook` 也只调用 `store.selectBook`。
+- 预期行为：进入页面或切换词书仅由 `store.selectBook`（内部 `await loadWords`）发起一次请求；无其它入口重复触发。

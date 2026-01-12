@@ -8,6 +8,22 @@
       @open-selector="selectorVisible = true"
     />
 
+    <WordPracticePanel
+      :word="store.currentWord"
+      :index="store.currentWordIndex"
+      :total="store.currentWords.length"
+      :mastery-label="masteryLabel"
+      :is-favorite="isFavorite"
+      :next-preview="nextPreview"
+      :pronunciation-state="pronunciationState"
+      @play="playPronunciation"
+      @toggle-favorite="toggleFavorite"
+      @mark-mastered="markCurrentWord('mastered')"
+      @mark-mistake="markCurrentWord('mistake')"
+      @next="store.setCurrentWordIndex(store.currentWordIndex + 1)"
+      @prev="store.setCurrentWordIndex(store.currentWordIndex - 1)"
+    />
+
     <view class="search-card">
       <view class="search-bar">
         <uni-icons type="search" size="18" color="#94a3b8" />
@@ -31,7 +47,7 @@
           class="action-pill"
           v-for="action in quickActions"
           :key="action.type"
-          :style="{ backgroundColor: action.bg }"
+          :style="{ background: action.bg }"
           @click="handleQuickAction(action)"
         >
           <view class="pill-icon">
@@ -45,22 +61,6 @@
         </view>
       </view>
     </view>
-
-    <WordPracticePanel
-      :word="store.currentWord"
-      :index="store.currentWordIndex"
-      :total="store.currentWords.length"
-      :mastery-label="masteryLabel"
-      :is-favorite="isFavorite"
-      :next-preview="nextPreview"
-      :pronunciation-state="pronunciationState"
-      @play="playPronunciation"
-      @toggle-favorite="toggleFavorite"
-      @mark-mastered="markCurrentWord('mastered')"
-      @mark-mistake="markCurrentWord('mistake')"
-      @next="store.setCurrentWordIndex(store.currentWordIndex + 1)"
-      @prev="store.setCurrentWordIndex(store.currentWordIndex - 1)"
-    />
 
     <WordListTable
       class="word-list-section"
@@ -103,6 +103,13 @@ const pronunciationState = reactive({ loading: false, error: '' })
 
 let audioContext = null
 
+const resetAudioContext = () => {
+  if (!audioContext) return
+  audioContext.stop()
+  audioContext.destroy()
+  audioContext = null
+}
+
 const filteredWords = computed(() => {
   const keyword = searchKeyword.value.trim().toLowerCase()
   if (!keyword) return store.currentWords
@@ -140,9 +147,30 @@ const nextPreview = computed(() => {
 })
 
 const quickActions = computed(() => [
-  { type: 'random', name: '随机练习', desc: '打破顺序', count: '', icon: 'loop', bg: '#7a86ff' },
-  { type: 'favorites', name: '收藏夹', desc: '高频复习', count: store.favorites.length, icon: 'star', bg: '#fbbf24' },
-  { type: 'mistakes', name: '错词集', desc: '重新巩固', count: store.mistakes.length, icon: 'closeempty', bg: '#fb7185' }
+  {
+    type: 'random',
+    name: '随机练习',
+    desc: '打破顺序',
+    count: '',
+    icon: 'loop',
+    bg: 'linear-gradient(135deg, #4f46e5, #7c3aed)'
+  },
+  {
+    type: 'favorites',
+    name: '收藏夹',
+    desc: '高频复习',
+    count: store.favorites.length,
+    icon: 'star',
+    bg: 'linear-gradient(135deg, #f59e0b, #f97316)'
+  },
+  {
+    type: 'mistakes',
+    name: '错词集',
+    desc: '重新巩固',
+    count: store.mistakes.length,
+    icon: 'closeempty',
+    bg: 'linear-gradient(135deg, #fb7185, #f43f5e)'
+  }
 ])
 
 const toDisplayWord = (word) => {
@@ -244,7 +272,6 @@ const toggleFavorite = () => {
 const handleSelectBook = async (book) => {
   if (!book) return
   await store.selectBook(book.id)
-  await store.loadWords(book.id)
   selectorVisible.value = false
   searchKeyword.value = ''
 }
@@ -275,11 +302,13 @@ const playPronunciation = () => {
     const candidate = store.currentWord.english || store.currentWord.word || ''
     const sanitized = sanitizePronunciationText(candidate)
     const finalQuery = sanitized || candidate
+    audioContext.stop()
     audioContext.src = `${DICT_VOICE_URL}${encodeURIComponent(finalQuery)}`
     audioContext.play()
   } catch (error) {
     console.error('播放发音出错', error)
     pronunciationState.error = '发音服务异常，请稍后再试'
+    resetAudioContext()
   } finally {
     pronunciationState.loading = false
   }
@@ -295,15 +324,13 @@ const setupAudioContext = () => {
   audioContext.onError((error) => {
     console.error('发音播放失败', error)
     pronunciationState.error = '无法获取发音，请稍后重试'
+    pronunciationState.loading = false
+    resetAudioContext()
   })
 }
 
 const destroyAudioContext = () => {
-  if (audioContext) {
-    audioContext.stop()
-    audioContext.destroy()
-    audioContext = null
-  }
+  resetAudioContext()
 }
 
 const initDetailPage = async (bookId) => {
@@ -334,12 +361,9 @@ watch(filteredWords, () => {
 
 watch(
   () => store.selectedBookId,
-  (bookId) => {
+  () => {
     currentPage.value = 1
     searchKeyword.value = ''
-    if (bookId && !store.wordsByBook?.[bookId]) {
-      store.loadWords(bookId)
-    }
   }
 )
 
@@ -361,30 +385,32 @@ onUnmounted(() => {
 .word-detail-page {
   min-height: 100vh;
   padding: 30rpx 24rpx 80rpx;
-  background: linear-gradient(180deg, #f8faff 0%, #f4f7fb 50%, #fff 100%);
+  background: linear-gradient(180deg, #f9fbff 0%, #f1f4ff 40%, #fdf9ff 100%);
 }
 
 .search-card {
-  margin-top: 16rpx;
-  margin-bottom: 26rpx;
-  padding: 24rpx 22rpx;
+  margin: 18rpx 0 24rpx;
+  padding: 26rpx 24rpx;
   border-radius: 28rpx;
-  background: #ffffff;
-  box-shadow: 0 20rpx 36rpx rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #eef2ff;
+  box-shadow: 0 20rpx 40rpx rgba(15, 23, 42, 0.08);
 }
 
 .search-bar {
   display: flex;
   align-items: center;
   gap: 14rpx;
-  background: #f5f6fb;
+  background: #f6f7fb;
   border-radius: 999rpx;
-  padding: 12rpx 20rpx;
+  padding: 14rpx 20rpx;
+  border: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .search-input {
   flex: 1;
-  font-size: 26rpx;
+  font-size: 28rpx;
+  color: #0f172a;
 }
 
 .search-clear {
@@ -398,31 +424,42 @@ onUnmounted(() => {
 }
 
 .search-meta {
-  margin-top: 12rpx;
+  margin-top: 14rpx;
   font-size: 24rpx;
   color: #6b7280;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .search-link {
-  color: #6366f1;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 24rpx;
 }
 
 .action-row {
   margin-top: 18rpx;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14rpx;
 }
 
 .action-pill {
   display: flex;
   align-items: center;
-  border-radius: 20rpx;
-  padding: 16rpx;
+  border-radius: 22rpx;
+  padding: 18rpx;
   color: #fff;
-  box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12rpx 24rpx rgba(15, 23, 42, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-pill:nth-child(3) {
+  grid-column: span 2;
 }
 
 .pill-icon {
@@ -452,11 +489,11 @@ onUnmounted(() => {
 }
 
 .pill-count {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 700;
 }
 
 .word-list-section {
-  margin-top: 30rpx;
+  margin-top: 26rpx;
 }
 </style>

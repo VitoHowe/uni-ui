@@ -9,11 +9,13 @@
         </text>
       </view>
       <view class="word-header__progress">
-        <view class="progress-ring">
-          <text class="progress-value">{{ loading ? '--' : `${learningRate}%` }}</text>
-          <text class="progress-label">掌握率</text>
+        <view class="progress-inline">
+          <view class="progress-chip">
+            <text class="progress-label">掌握率</text>
+            <text class="progress-value">{{ loading ? '--' : `${learningRate}%` }}</text>
+          </view>
+          <button class="progress-switch" @click="$emit('open-selector')">切换词书</button>
         </view>
-        <button class="progress-switch" @click="$emit('open-selector')">切换词书</button>
       </view>
     </view>
     <view class="word-header__stats">
@@ -51,22 +53,24 @@ defineEmits(['open-selector'])
 <style lang="scss" scoped>
 .word-header {
   margin: 20rpx;
-  padding: 38rpx 34rpx;
+  padding: 40rpx 34rpx;
   border-radius: 36rpx;
-  background: linear-gradient(135deg, #312e81, #6366f1);
+  background: radial-gradient(circle at top right, rgba(149, 114, 252, 0.65), rgba(79, 70, 229, 0.95));
   color: #fff;
-  box-shadow: 0 24rpx 60rpx rgba(79, 70, 229, 0.35);
+  box-shadow: 0 30rpx 60rpx rgba(79, 70, 229, 0.35);
 }
 
 .word-header__meta {
   display: flex;
   justify-content: space-between;
   gap: 32rpx;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .info-eyebrow {
   font-size: 24rpx;
-  letter-spacing: 4rpx;
+  letter-spacing: 3rpx;
   text-transform: uppercase;
   opacity: 0.75;
 }
@@ -87,25 +91,31 @@ defineEmits(['open-selector'])
 
 .word-header__progress {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12rpx;
+  justify-content: flex-end;
+  width: 100%;
 }
 
-.progress-ring {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  border: 4rpx solid rgba(255, 255, 255, 0.35);
+.progress-inline {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 14rpx;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.progress-chip {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .progress-value {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 700;
 }
 
@@ -121,6 +131,7 @@ defineEmits(['open-selector'])
   font-size: 26rpx;
   color: #0f172a;
   background: #fff;
+  box-shadow: 0 10rpx 20rpx rgba(15, 23, 42, 0.18);
 }
 
 .word-header__stats {

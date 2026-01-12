@@ -12,19 +12,19 @@
         </view>
       </view>
       <view class="practice-card__actions">
-        <button class="pill" @click="$emit('play')" :loading="pronunciationState.loading">
+        <button class="pill pill--primary" @click="$emit('play')" :loading="pronunciationState.loading">
           <uni-icons type="sound" size="18" color="#fff" />
           <text>播放发音</text>
         </button>
-        <button class="pill" @click="$emit('toggle-favorite')">
-          <uni-icons type="star" size="18" :color="isFavorite ? '#facc15' : '#fff'" />
+        <button class="pill pill--ghost" @click="$emit('toggle-favorite')">
+          <uni-icons type="star" size="18" :color="isFavorite ? '#f59e0b' : '#1d4ed8'" />
           <text>{{ isFavorite ? '已收藏' : '收藏' }}</text>
         </button>
-        <button class="pill" @click="$emit('mark-mastered')">
+        <button class="pill pill--success" @click="$emit('mark-mastered')">
           <uni-icons type="checkmarkempty" size="18" color="#fff" />
           <text>已掌握</text>
         </button>
-        <button class="pill" @click="$emit('mark-mistake')">
+        <button class="pill pill--warning" @click="$emit('mark-mistake')">
           <uni-icons type="refresh" size="18" color="#fff" />
           <text>待复习</text>
         </button>
@@ -92,8 +92,9 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
 .practice-card {
   background: #fff;
   border-radius: 28rpx;
-  padding: 32rpx;
-  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.08);
+  padding: 34rpx;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 20rpx 40rpx rgba(15, 23, 42, 0.08);
 }
 
 .practice-card__head {
@@ -126,8 +127,8 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
   width: 72rpx;
   height: 72rpx;
   border-radius: 20rpx;
-  background: #eef2ff;
-  color: #4c1d95;
+  background: linear-gradient(135deg, #e0e7ff, #f5f3ff);
+  color: #4338ca;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,8 +139,8 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
 .practice-card__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
-  margin-top: 22rpx;
+  gap: 14rpx;
+  margin-top: 24rpx;
 }
 
 .pill {
@@ -151,18 +152,41 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
   gap: 10rpx;
   border-radius: 999rpx;
   border: none;
-  background: linear-gradient(135deg, #0f62fe, #5b8dff);
-  color: #fff;
   padding: 18rpx;
   font-size: 26rpx;
+  font-weight: 600;
+}
+
+.pill--primary {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  box-shadow: 0 10rpx 22rpx rgba(79, 70, 229, 0.28);
+}
+
+.pill--ghost {
+  background: #eef2ff;
+  color: #1d4ed8;
+  box-shadow: none;
+}
+
+.pill--success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  box-shadow: 0 10rpx 22rpx rgba(34, 197, 94, 0.25);
+}
+
+.pill--warning {
+  background: linear-gradient(135deg, #f97316, #fb7185);
+  color: #fff;
+  box-shadow: 0 10rpx 22rpx rgba(248, 113, 113, 0.25);
 }
 
 .practice-card__meta {
   display: flex;
   justify-content: space-between;
   font-size: 24rpx;
-  color: #666;
-  margin-top: 20rpx;
+  color: #64748b;
+  margin-top: 22rpx;
 }
 
 .practice-card__nav {
@@ -181,26 +205,31 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
 }
 
 .nav--primary {
-  background: linear-gradient(135deg, #007aff, #00b4d8);
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
   color: #fff;
+  box-shadow: 0 12rpx 24rpx rgba(79, 70, 229, 0.2);
 }
 
 .nav--ghost {
-  border: 2rpx solid #d6e4ff;
-  color: #0f62fe;
+  border: 2rpx solid #c7d2fe;
+  color: #4338ca;
+  background: #f8fafc;
 }
 
 .practice-card__preview {
   margin-top: 16rpx;
   text-align: right;
   font-size: 24rpx;
-  color: #666;
+  color: #64748b;
 }
 
 .practice-card__error {
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: #ff4d4f;
+  color: #b91c1c;
+  background: #fff1f2;
+  border-radius: 12rpx;
+  padding: 10rpx 14rpx;
 }
 
 .practice-empty {
@@ -211,9 +240,10 @@ defineEmits(['play', 'toggle-favorite', 'mark-mastered', 'mark-mistake', 'next',
   justify-content: center;
   gap: 12rpx;
   color: #999;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #eef2ff;
   border-radius: 24rpx;
   padding: 36rpx;
-  box-shadow: 0 10rpx 25rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
 }
 </style>

@@ -1,18 +1,19 @@
-﻿{
-  "task": "为study.vue新增单词练习模块",
-  "userGoal": "在学习页面提供具备发音、注释、例句等能力的单词练习体验，支持mock数据并预留对接免费发音API。",
+{
+  "task": "修复 word-detail 页面重复调用 `/api/word-books/{id}/words`",
+  "userGoal": "在进入单词详情页或切换词书时仅触发一次词表请求，避免短时间内对 `/api/word-books/{id}/words` 产生双请求，同时保持现有练习/搜索/收藏功能可用。",
   "successCriteria": [
-    "页面展示可滚动的单词练习区域，结构清晰，含单词、音标、释义、注释、例句",
-    "提供发音按钮触发音频播放，使用mock API返回的音频URL",
-    "具备交互（收藏、标记掌握度或下一词等）以模拟常见单词软件",
-    "代码与文档符合项目风格，补充必要测试与说明"
+    "定位每条调用链（生命周期钩子、watch、store action、组件事件）并移除冗余调用",
+    "首次进入页面时只发起一次 fetchWordBookWords 请求；切换词书、刷新或随机跳转等操作也只触发一次必要请求",
+    "仍然在词书切换后复位分页、搜索、面板状态，selector/quick actions 行为不回退",
+    "提供可复现的验证步骤（日志/测试）证明重复请求问题被修复"
   ],
   "dependencies": [
-    "uni-app基础组件",
-    "潜在的免费TTS接口（暂以mock替代）"
+    "Pinia store `useWordPracticeStore`（`selectBook`、`loadWords`）",
+    "word book service `services/wordBooks.js`（`fetchWordBookWords`）",
+    "uni-app 生命周期（`onLoad`, `onMounted`）以及页面内部 watch"
   ],
   "openQuestions": [
-    "最终API数据结构待后端提供",
-    "是否需要多语音/多口音支持"
+    "是否还有其它组件/服务（例如收藏列表、快捷操作）直接调用 `store.loadWords` 造成额外请求，需在实现阶段继续排查",
+    "后续是否需要节流或缓存策略应对用户快速切换/刷新（目前仅聚焦一次重复请求）"
   ]
 }

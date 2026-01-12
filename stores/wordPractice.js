@@ -9,6 +9,11 @@ import {
 } from '@/utils/wordProgress.js'
 
 const LAST_BOOK_KEY = 'WORD_PRACTICE_LAST_BOOK'
+const normalizeBookId = (value) => {
+  if (value === null || value === undefined) return null
+  return String(value)
+}
+const isSameBookId = (a, b) => normalizeBookId(a) === normalizeBookId(b)
 
 export const useWordPracticeStore = defineStore('wordPractice', {
   state: () => ({
@@ -25,7 +30,8 @@ export const useWordPracticeStore = defineStore('wordPractice', {
     progressByBook: {}
   }),
   getters: {
-    currentBook: (state) => state.books.find((book) => book.id === state.selectedBookId) || null,
+    currentBook: (state) =>
+      state.books.find((book) => isSameBookId(book.id, state.selectedBookId)) || null,
     currentWords: (state) => state.wordsByBook[state.selectedBookId] || [],
     currentWord(state) {
       const words = this.currentWords
@@ -59,8 +65,12 @@ export const useWordPracticeStore = defineStore('wordPractice', {
         this.books = books
         this.booksTotal = total
         this.booksPagination = pagination
-        if (this.selectedBookId && books.some((book) => book.id === this.selectedBookId)) {
-          this.bootstrapProgress(this.selectedBookId)
+        const matchedBook = this.selectedBookId
+          ? books.find((book) => isSameBookId(book.id, this.selectedBookId))
+          : null
+        if (matchedBook) {
+          this.selectedBookId = matchedBook.id
+          this.bootstrapProgress(matchedBook.id)
         } else if (books.length) {
           await this.selectBook(books[0].id, { preloadWords: false })
         }
@@ -74,17 +84,19 @@ export const useWordPracticeStore = defineStore('wordPractice', {
     async selectBook(bookId, options = {}) {
       const { preloadWords = true } = options
       if (!bookId) return
-      const changed = this.selectedBookId !== bookId
-      this.selectedBookId = bookId
-      uni.setStorageSync(LAST_BOOK_KEY, bookId)
-      this.bootstrapProgress(bookId)
-      if (preloadWords && (changed || !this.wordsByBook[bookId])) {
-        await this.loadWords(bookId)
+      const resolvedBook = this.books.find((book) => isSameBookId(book.id, bookId))
+      const nextBookId = resolvedBook ? resolvedBook.id : bookId
+      const changed = !isSameBookId(this.selectedBookId, nextBookId)
+      this.selectedBookId = nextBookId
+      uni.setStorageSync(LAST_BOOK_KEY, nextBookId)
+      this.bootstrapProgress(nextBookId)
+      if (preloadWords && (changed || !this.wordsByBook[nextBookId])) {
+        await this.loadWords(nextBookId)
       } else if (preloadWords) {
-        const progress = this.progressByBook[bookId]
+        const progress = this.progressByBook[nextBookId]
         this.currentWordIndex = progress?.lastCursor || 0
       } else {
-        const progress = this.progressByBook[bookId]
+        const progress = this.progressByBook[nextBookId]
         this.currentWordIndex = progress?.lastCursor || 0
       }
     },

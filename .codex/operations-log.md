@@ -162,3 +162,77 @@
 - 2025-11-12T23:01:10+08:00 | shell | redesigned `WordPracticeHeader.vue` with new commercial hero style | success
 - 2025-11-12T23:01:25+08:00 | shell | `[powershell.exe -NoLogo -Command "node tests/wordPractice.spec.js"]` | success (regression check)
 - 2025-11-12T23:01:35+08:00 | update_plan | marked lazy-loading + UI redesign plan completed | success
+- 2025-11-16T22:46:20+08:00 | list_mcp_resources | `{}` | success (inventory available MCP resources)
+- 2025-11-16T22:46:30+08:00 | list_mcp_resource_templates | `{}` | success (checked for MCP resource templates)
+- 2025-11-16T22:46:45+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); chcp 65001 > $null"]` | success (set console encodings + UTF-8 codepage)
+- 2025-11-16T22:47:00+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-ChildItem"]` | success (list repository root for orientation)
+- 2025-11-16T22:47:10+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-ChildItem"]` (workdir `.codex`) | success (inspect .codex workspace metadata)
+- 2025-11-16T22:47:25+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw operations-log.md"]` (workdir `.codex`) | success (review existing operations log for format)
+- 2025-11-16T22:47:40+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Date -Format \"yyyy-MM-dd HH:mm:ss\""]` | success (capture local timestamp reference)
+- 2025-11-16T22:47:50+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "type .\ ."]` | failed (attempted quick file dump; invalid parameters)
+- 2025-11-16T22:48:10+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "sequential-thinking"]` | failed (MCP sequential-thinking command unavailable)
+- 2025-11-16T22:48:25+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Tail 20 operations-log.md"]` (workdir `.codex`) | success (inspect latest log entries)
+
+- 2025-11-16T22:48:40+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "$entries = @(); $entries += '- ...'; Add-Content -Path '.codex/operations-log.md' -Value ($entries -join "``n"); Add-Content -Path '.codex/operations-log.md' -Value """]` | success (backfilled earlier tool usage entries into operations log)
+- 2025-11-16T22:48:50+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "$entries = @(); $entries += '- ...'"]` | success (placeholder logging command executed without Add-Content)
+- 2025-11-16T22:49:05+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "$entries = @(); ...; Add-Content -Path '.codex/operations-log.md' -Value ($entries -join "``n"); Add-Content -Path '.codex/operations-log.md' -Value """]` | success (logged prior two shell commands and this meta logging run)
+- 2025-11-16T22:51:00+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'pages/word-practice/word-detail.vue'"]` | success (review entire word-detail implementation to trace API triggers)
+- 2025-11-16T22:51:05+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n \"initDetailPage\" pages/word-practice/word-detail.vue"]` | success (locate initDetailPage definition for targeted inspection)
+- 2025-11-16T22:51:10+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Path 'pages/word-practice/word-detail.vue' | Select-Object -Skip 260 | Select-Object -First 160"]` | success (capture watcher/initDetailPage code block)
+- 2025-11-16T22:51:15+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Path 'pages/word-practice/word-detail.vue' | Select-Object -Skip 200 | Select-Object -First 120"]` | success (inspect quick actions + handleSelectBook implementation)
+- 2025-11-16T22:51:20+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'stores/wordPractice.js'"]` | success (inspect Pinia store selectBook/loadWords behavior)
+- 2025-11-16T22:51:26+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n 'selectedBookId' -g'*'"]` | success (search repo for selectedBookId mutations/usages)
+- 2025-11-16T22:51:32+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'pages/word-practice/word-practice.vue'"]` | success (review hub page store interactions)
+- 2025-11-16T22:51:37+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n 'handleSelectBook' pages/word-practice/word-practice.vue"]` | success (locate hub selector handler)
+- 2025-11-16T22:51:42+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Path 'pages/word-practice/word-practice.vue' | Select-Object -Skip 120 | Select-Object -First 120"]` | success (capture hub selector callback snippet)
+- 2025-11-16T22:51:48+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'services/wordBooks.js'"]` | success (confirm word API service contract)
+- 2025-11-16T22:51:54+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'utils/constants.js'"]` | success (verify endpoint definition for `/word-books/{id}/words`)
+- 2025-11-16T22:51:59+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'tests/wordPractice.spec.js'"]` | success (review existing regression test)
+- 2025-11-16T22:52:04+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/context-scan.json'"]` | success (load previous context scan for comparison)
+- 2025-11-16T22:52:09+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/structured-request.json'"]` | success (review structured request template)
+- 2025-11-16T22:52:14+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/context-questions.json'"]` | success (inspect existing known/unknown list)
+- 2025-11-16T22:52:19+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/context-question-1.json'"]` | success (understand deep-dive file format)
+- 2025-11-16T22:52:24+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/context-sufficiency.json'"]` | success (review sufficiency template)
+- 2025-11-16T22:52:29+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/context-sufficiency.md'"]` | success (review markdown checklist)
+- 2025-11-16T22:52:35+08:00 | apply_patch | attempted batch update of structured/context artifacts | failed (original text mismatched CRLF)
+- 2025-11-16T22:52:50+08:00 | apply_patch | deleted `.codex/structured-request.json` (preparing rewrite) | success
+- 2025-11-16T22:52:52+08:00 | apply_patch | added updated `.codex/structured-request.json` (duplicate fetch focus) | success
+- 2025-11-16T22:52:54+08:00 | apply_patch | deleted `.codex/context-scan.json` | success
+- 2025-11-16T22:52:57+08:00 | apply_patch | added refreshed `.codex/context-scan.json` with duplicate-fetch analysis | success
+- 2025-11-16T22:52:59+08:00 | apply_patch | deleted `.codex/context-questions.json` | success
+- 2025-11-16T22:53:01+08:00 | apply_patch | added new `.codex/context-questions.json` (WD-1/WD-2/WD-3) | success
+- 2025-11-16T22:53:03+08:00 | apply_patch | added `.codex/context-question-5.json` (WD-1 deep dive) | success
+- 2025-11-16T22:53:05+08:00 | apply_patch | added `.codex/context-question-6.json` (WD-2 deep dive) | success
+- 2025-11-16T22:53:07+08:00 | apply_patch | deleted `.codex/context-sufficiency.json` | success
+- 2025-11-16T22:53:09+08:00 | apply_patch | added updated `.codex/context-sufficiency.json` | success
+- 2025-11-16T22:53:11+08:00 | apply_patch | deleted `.codex/context-sufficiency.md` | success
+- 2025-11-16T22:53:13+08:00 | apply_patch | added refreshed `.codex/context-sufficiency.md` | success
+- 2025-11-16T22:53:25+08:00 | apply_patch | appended Stage0 command log entries (this patch) | success
+- 2025-11-16T22:53:30+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "shrimp-task-manager --help"]` | failed (shrimp-task-manager CLI unavailable in environment)
+- 2025-11-16T22:53:35+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n \"preloadWords\" -g\"*\""]` | success (confirm where preloadWords options are used)
+- 2025-11-16T22:53:40+08:00 | update_plan | 初始化 3 步实施计划（梳理入口、实现去重、验证） | success
+- 2025-11-16T22:53:50+08:00 | apply_patch | 移除 `handleSelectBook` 与 watch 中的冗余 `store.loadWords` 调用 | success
+- 2025-11-16T22:53:55+08:00 | update_plan | 标记入口梳理完成，并将实现阶段置为 in-progress | success
+- 2025-11-16T22:54:00+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n \"loadWords\" pages/word-practice/word-detail.vue"]` | success (确认仅剩 fallback 调用)
+- 2025-11-16T22:54:05+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "node tests/wordPractice.spec.js"]` | success (词库回归测试)
+- 2025-11-16T22:54:08+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/testing.md'"]` | success (查看测试记录模板)
+- 2025-11-16T22:54:12+08:00 | apply_patch | 更新 `.codex/testing.md`，追加 2025-11-16 回归记录 | success
+- 2025-11-16T22:54:15+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path 'verification.md'"]` | success (读取原有验证报告)
+- 2025-11-16T22:54:18+08:00 | apply_patch | 删除旧版 `verification.md` | success
+- 2025-11-16T22:54:20+08:00 | apply_patch | 新增 `verification.md`（包含 word-detail 请求验证） | success
+- 2025-11-16T22:54:22+08:00 | apply_patch | 修正 `verification.md` “审查” 字段的简体字 | success
+- 2025-11-16T22:54:25+08:00 | update_plan | 将三个计划步骤全部标记为 completed | success
+- 2025-11-16T22:54:30+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/review-report.md'"]` | success (查看旧审查报告格式)
+- 2025-11-16T22:54:33+08:00 | apply_patch | 删除旧版 `.codex/review-report.md` | success
+- 2025-11-16T22:54:36+08:00 | apply_patch | 添加新版 `.codex/review-report.md`（本次修复审查） | success
+- 2025-11-16T22:54:45+08:00 | apply_patch | 追加上述命令日志（本 patch） | success
+- 2025-11-16T22:54:50+08:00 | apply_patch | 调整 `watch(selectedBookId)` 仅复位分页/搜索，不再判断 bookId | success
+- 2025-11-16T22:54:55+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "git status -sb"]` | success (查看当前改动列表)
+- 2025-11-16T22:55:05+08:00 | apply_patch | 追加最新操作日志（本 patch） | success
+- 2025-11-16T22:55:10+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n \"watch\\\" pages/word-practice/word-detail.vue"]` | failed (PowerShell quoting error while trying to locate watch block)
+- 2025-11-16T22:55:12+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "rg -n \"watch\\(\" pages/word-practice/word-detail.vue"]` | success (capture watcher line numbers for reporting)
+- 2025-11-16T22:55:20+08:00 | apply_patch | 记录最新 shell 操作到 operations log（本 patch） | success
+- 2025-11-16T22:50:00+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Raw -Path '.codex/sequential-thinking-004.md'"]` | success (review prior sequential thinking format for consistency)
+- 2025-11-16T22:50:15+08:00 | shell | `[powershell.exe -NoLogo -NoProfile -Command "Get-Content -Tail 5 .codex/operations-log.md"]` | success (confirm latest operations log tail before appending)
+- 2025-11-16T22:50:45+08:00 | apply_patch | created `.codex/sequential-thinking-005.md` and logged pending commands | success
+

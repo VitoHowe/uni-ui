@@ -61,25 +61,39 @@ defineEmits(['change-page', 'select'])
 <style lang="scss" scoped>
 .word-list {
   margin: 20rpx;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 24rpx;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 20rpx 40rpx rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.word-table {
+  padding: 0 12rpx 8rpx;
 }
 
 .word-table__head {
   display: grid;
   grid-template-columns: 1.2fr 1fr 0.8fr;
-  padding: 22rpx 0;
+  padding: 18rpx 12rpx;
   font-size: 26rpx;
+  font-weight: 600;
   color: #6b7280;
-  border-bottom: 1rpx solid #e5e7eb;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  margin: 0 0 12rpx;
 }
 
 .word-table__row {
   display: grid;
   grid-template-columns: 1.2fr 1fr 0.8fr;
-  padding: 20rpx 0;
+  padding: 18rpx 12rpx;
   align-items: center;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-radius: 16rpx;
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  margin-bottom: 12rpx;
+  box-shadow: 0 6rpx 14rpx rgba(15, 23, 42, 0.05);
 }
 
 .word-table__cell {
@@ -102,11 +116,14 @@ defineEmits(['change-page', 'select'])
 }
 
 .word-pagination {
-  margin-top: 20rpx;
+  margin: 16rpx 12rpx 20rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 12rpx;
 }
 
 .page-btn {
@@ -114,8 +131,8 @@ defineEmits(['change-page', 'select'])
   border: none;
   border-radius: 14rpx;
   background: #eef2ff;
-  color: #1d4ed8;
-  padding: 16rpx 0;
+  color: #4338ca;
+  padding: 14rpx 0;
   font-size: 26rpx;
 }
 

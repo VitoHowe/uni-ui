@@ -30,6 +30,13 @@ const _sfc_main = {
   },
   emits: ["close", "select"],
   setup(__props) {
+    const props = __props;
+    const normalizeBookId = (value) => {
+      if (value === null || value === void 0)
+        return null;
+      return String(value);
+    };
+    const isActiveBook = (bookId) => normalizeBookId(bookId) === normalizeBookId(props.selectedBookId);
     const formatDate = (value) => {
       if (!value)
         return "刚刚";
@@ -52,8 +59,8 @@ const _sfc_main = {
             c: common_vendor.t(book.description || "暂无简介，立即开启学习。"),
             d: common_vendor.t(book.totalWords || 0),
             e: common_vendor.t(formatDate(book.createdAt)),
-            f: book.id === __props.selectedBookId
-          }, book.id === __props.selectedBookId ? {} : {}, {
+            f: isActiveBook(book.id)
+          }, isActiveBook(book.id) ? {} : {}, {
             g: book.id,
             h: common_vendor.o(($event) => _ctx.$emit("select", book), book.id)
           });

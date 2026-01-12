@@ -1,8 +1,8 @@
-# Context Sufficiency Checklist — 2025-11-12
+# Context Sufficiency Checklist — 2025-11-16
 
-- [x] **接口契约明确**：后端已给出 `/api/word-books` 与 `/api/word-books/{id}/words` 返回结构；进度相关接口缺口将通过文档提出 `GET/POST /api/word-books/:bookId/progress` 需求。
-- [x] **技术选型理解**：页面运行在 uni-app + Vue 3 `<script setup>`，网络层复用 `utils/request.js`，状态以组合式 API 为主，组件化方案已确定（selector + practice panel + progress模块）。
-- [x] **主要风险识别**：已记录多词书状态隔离、全量词条加载性能、进度持久化及组件臃肿等风险，并在设计中准备分页/节流策略。
-- [x] **验证方案明确**：计划编写 service 层单元测试、状态管理逻辑测试与页面冒烟脚本；同时沿用 `tests/wordPractice.spec.js` 思路新增 API mock 校验，并准备手动 run (node + uni simulation)。
+- [x] **接口契约明确**：`useWordPracticeStore.loadWords(bookId)` 命中 `GET /word-books/{id}/words`，只需 bookId，响应为 `{ book, words[] }`。
+- [x] **技术选型清晰**：沿用 uni-app + Vue 3 + Pinia + `utils/request.js`，通过 store action 控制请求次数，watch/事件仅处理 UI。
+- [x] **主要风险已识别**：移除 watcher/selector 的重复调用后需确保默认词书仍能加载、慢网下 UX 保持、缺少自动化计数手段。
+- [x] **验证路径可行**：利用日志/断点统计 `fetchWordBookWords` 调用次数，运行 `node tests/wordPractice.spec.js` 并手动切换词书验证。
 
-→ 条件满足，可进入任务规划。
+✅ 条件满足，可进入任务规划。

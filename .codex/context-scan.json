@@ -1,76 +1,75 @@
 {
-  "module": "word practice workflow",
+  "module": "word-practice detail 双请求排查",
+  "timestamp": "2025-11-16T22:52:40+08:00",
   "locations": [
     {
+      "path": "pages/word-practice/word-detail.vue",
+      "role": "练习主页面，包含 selector、practice panel、表格以及 `/api/word-books/{id}/words` 的直接触发点"
+    },
+    {
+      "path": "stores/wordPractice.js",
+      "role": "Pinia 状态（books、wordsByBook、selectedBookId、progress）和 `selectBook`/`loadWords` 动作"
+    },
+    {
       "path": "pages/word-practice/word-practice.vue",
-      "role": "primary page composing hero stats, quick actions, current word detail, lists and pagination; currently monolithic"
+      "role": "词书 Hub，打开 selector/导航 detail，并通过 `selectBook(..., { preloadWords: false })` 设定默认词书"
     },
     {
-      "path": "utils/wordBank.js",
-      "role": "loads mock JSON (`mock/中高项单词词库.json`) and normalizes a local list used by the page"
-    },
-    {
-      "path": "utils/constants.js",
-      "role": "defines API base URLs and endpoints but no word-book specific entries yet"
+      "path": "services/wordBooks.js",
+      "role": "封装 `fetchWordBooks` / `fetchWordBookWords`，最终访问 `/word-books/{id}/words` 接口"
     },
     {
       "path": "tests/wordPractice.spec.js",
-      "role": "Node script validating the mock word bank file size/content"
+      "role": "Node 校验脚本，当前只校验 mock 词库，未覆盖 API 调用次数"
     }
   ],
   "current_state": {
-    "data_source": "Front-end imports static `wordBank` and `wordIds`, no API calls to backend",
-    "progress_storage": "Favorites/Mastered/Review tracked via `uni.setStorageSync` under `WORD_PRACTICE_PROGRESS`, keyed only by word id",
-    "features": [
-      "Search/filter/pagination of the static list",
-      "Bookmarking, mastered/review tagging, random jump, audio playback placeholder",
-      "Lists for favorites, review queue, and master list table"
-    ],
-    "limitations": [
-      "Cannot choose among multiple word books",
-      "No persistence of word source or per-book progress",
-      "Logic tightly coupled inside one Vue SFC with >800 lines of template+script+style"
+    "data_flow": "word-detail 通过 `useWordPracticeStore` 管理词书。`initDetailPage`、`watch(selectedBookId)`、`handleSelectBook` 等函数都会触发 `store.loadWords`；store 的 `selectBook` 默认 `preloadWords=true`，内部也会 `await loadWords`。",
+    "lifecycle": "`onLoad` -> `initDetailPage`（拉取 books / selectBook）；`watch(() => store.selectedBookId)` 监听切换时重置分页并再次发起 `loadWords`；selector 选择后 `handleSelectBook` 再次调用 `selectBook`+`loadWords`。",
+    "issues": [
+      "watch 钩子在 `selectedBookId` 改变瞬间触发 `store.loadWords(bookId)`，而 `selectBook` 稍后也会 `await loadWords`，导致双请求。",
+      "`handleSelectBook` 手动写死 `await store.selectBook` + `await store.loadWords`，selector 切换时也会请求两次。",
+      "Hub 页为了首屏性能传入 `preloadWords: false`，因此 detail 页需要在首次进入时负责加载，容易与其它逻辑重叠。"
     ]
   },
   "similar_patterns": [
     {
       "path": "pages/exam/exam.vue",
-      "note": "Large interactive flow using separate components/utilities; demonstrates advanced state orchestration and navigation"
+      "note": "复杂练习流程通过 store action 严格控制请求入口，可借鉴只在 action 内发起 fetch。"
     },
     {
       "path": "pages/exam-list/exam-list.vue",
-      "note": "List view with stats + filtering + navigation; can inform word book selector layout"
+      "note": "筛选变化只更新查询条件再统一拉取一次列表，提醒我们 watch 中应避免直接发请求。"
     },
     {
-      "path": "pages/question/question.vue",
-      "note": "Simpler stats + quick entry cards structure similar to quick actions region"
+      "path": "components/word-practice/WordBookSelector.vue",
+      "note": "组件只发射 `select` 事件，不处理网络请求，说明重复调用完全由页面逻辑造成。"
     }
   ],
   "tech_stack": {
-    "framework": "Vue 3 + `<script setup>` within uni-app runtime",
-    "ui_components": ["uni-section", "uni-icons", "uni-table", "uni-pagination", "uni-popup"],
-    "state": "Local refs/reactive/computed; `uni` APIs for storage/audio; no centralized store for words"
+    "framework": "uni-app + Vue 3 `<script setup>`",
+    "state_management": "Pinia `useWordPracticeStore`（books / words / progress）",
+    "network": "`utils/request.js` + `API_ENDPOINTS.WORD_BOOKS.WORDS(bookId)` -> `/word-books/{id}/words`",
+    "tooling": "Node assert 测试、uni 内置音频/导航 API"
   },
   "tests": [
     {
       "path": "tests/wordPractice.spec.js",
-      "type": "Node assert script",
-      "coverage": "Validates mock JSON length and duplicate entries; no UI/unit tests"
+      "type": "Node assert 脚本",
+      "coverage": "仅校验 mock 词库结构，无法检测接口调用次数"
     }
   ],
   "observation_report": {
-    "tooling_notes": "code-index MCP tool unavailable -> relying on manual file reads (recorded).",
+    "tooling_notes": "sequential-thinking / code-index MCP 仍不可用，只能手工阅读源码并记录到 operations log。",
     "issues": [
-      "Page depends entirely on mock data; needs API client integration",
-      "Progress tracking lacks book context, so multi-book scenario unsupported",
-      "Componentization absent; future changes risk regression without splitting concerns",
-      "Existing test only guards mock data, not runtime behavior"
+      "watch 中的 `store.loadWords` 与 `selectBook` 内置调用重复",
+      "`handleSelectBook` 直接二次 `store.loadWords`",
+      "缺乏检测请求次数的自动化测试"
     ],
     "suggested_next_steps": [
-      "Design API service layer for `/api/word-books` and `/api/word-books/{id}/words` using existing constants/request helper",
-      "Model book-aware progress entities (favorites/review/mastered referencing bookId+wordId)",
-      "Split UI into selection, practice panel, list modules before feature expansion",
-      "Plan new automated tests (unit + integration) covering data transforms and state transitions"
+      "只在 `selectBook`（或显式刷新按钮）内部触发 `loadWords`，watcher 负责 UI 状态",
+      "移除 selector 回调中的第二次请求，同时保留搜索/分页复位",
+      "后续可在 store 层增加 in-flight guard 或测试来监控请求次数"
     ]
   }
 }

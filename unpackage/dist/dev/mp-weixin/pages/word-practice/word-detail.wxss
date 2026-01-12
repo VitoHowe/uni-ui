@@ -3,27 +3,29 @@
 .word-detail-page.data-v-22e2a63f {
   min-height: 100vh;
   padding: 30rpx 24rpx 80rpx;
-  background: linear-gradient(180deg, #f8faff 0%, #f4f7fb 50%, #fff 100%);
+  background: linear-gradient(180deg, #f9fbff 0%, #f1f4ff 40%, #fdf9ff 100%);
 }
 .search-card.data-v-22e2a63f {
-  margin-top: 16rpx;
-  margin-bottom: 26rpx;
-  padding: 24rpx 22rpx;
+  margin: 18rpx 0 24rpx;
+  padding: 26rpx 24rpx;
   border-radius: 28rpx;
-  background: #ffffff;
-  box-shadow: 0 20rpx 36rpx rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #eef2ff;
+  box-shadow: 0 20rpx 40rpx rgba(15, 23, 42, 0.08);
 }
 .search-bar.data-v-22e2a63f {
   display: flex;
   align-items: center;
   gap: 14rpx;
-  background: #f5f6fb;
+  background: #f6f7fb;
   border-radius: 999rpx;
-  padding: 12rpx 20rpx;
+  padding: 14rpx 20rpx;
+  border: 1px solid rgba(99, 102, 241, 0.12);
 }
 .search-input.data-v-22e2a63f {
   flex: 1;
-  font-size: 26rpx;
+  font-size: 28rpx;
+  color: #0f172a;
 }
 .search-clear.data-v-22e2a63f {
   width: 40rpx;
@@ -35,28 +37,38 @@
   justify-content: center;
 }
 .search-meta.data-v-22e2a63f {
-  margin-top: 12rpx;
+  margin-top: 14rpx;
   font-size: 24rpx;
   color: #6b7280;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 .search-link.data-v-22e2a63f {
-  color: #6366f1;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 24rpx;
 }
 .action-row.data-v-22e2a63f {
   margin-top: 18rpx;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14rpx;
 }
 .action-pill.data-v-22e2a63f {
   display: flex;
   align-items: center;
-  border-radius: 20rpx;
-  padding: 16rpx;
+  border-radius: 22rpx;
+  padding: 18rpx;
   color: #fff;
-  box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12rpx 24rpx rgba(15, 23, 42, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+.action-pill.data-v-22e2a63f:nth-child(3) {
+  grid-column: span 2;
 }
 .pill-icon.data-v-22e2a63f {
   width: 48rpx;
@@ -81,9 +93,9 @@
   opacity: 0.85;
 }
 .pill-count.data-v-22e2a63f {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 700;
 }
 .word-list-section.data-v-22e2a63f {
-  margin-top: 30rpx;
+  margin-top: 26rpx;
 }

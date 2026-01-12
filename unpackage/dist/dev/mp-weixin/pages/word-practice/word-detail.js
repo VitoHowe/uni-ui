@@ -7,7 +7,7 @@ if (!Array) {
 }
 const _easycom_uni_icons = () => "../../uni_modules/uni-icons/components/uni-icons/uni-icons.js";
 if (!Math) {
-  (WordPracticeHeader + _easycom_uni_icons + WordPracticePanel + WordListTable + WordBookSelector)();
+  (WordPracticeHeader + WordPracticePanel + _easycom_uni_icons + WordListTable + WordBookSelector)();
 }
 const WordPracticeHeader = () => "../../components/word-practice/WordPracticeHeader.js";
 const WordPracticePanel = () => "../../components/word-practice/WordPracticePanel.js";
@@ -25,6 +25,13 @@ const _sfc_main = {
     const initializing = common_vendor.ref(false);
     const pronunciationState = common_vendor.reactive({ loading: false, error: "" });
     let audioContext = null;
+    const resetAudioContext = () => {
+      if (!audioContext)
+        return;
+      audioContext.stop();
+      audioContext.destroy();
+      audioContext = null;
+    };
     const filteredWords = common_vendor.computed(() => {
       const keyword = searchKeyword.value.trim().toLowerCase();
       if (!keyword)
@@ -64,9 +71,30 @@ const _sfc_main = {
       return ((_a = store.currentWords[nextIndex]) == null ? void 0 : _a.english) || "--";
     });
     const quickActions = common_vendor.computed(() => [
-      { type: "random", name: "随机练习", desc: "打破顺序", count: "", icon: "loop", bg: "#7a86ff" },
-      { type: "favorites", name: "收藏夹", desc: "高频复习", count: store.favorites.length, icon: "star", bg: "#fbbf24" },
-      { type: "mistakes", name: "错词集", desc: "重新巩固", count: store.mistakes.length, icon: "closeempty", bg: "#fb7185" }
+      {
+        type: "random",
+        name: "随机练习",
+        desc: "打破顺序",
+        count: "",
+        icon: "loop",
+        bg: "linear-gradient(135deg, #4f46e5, #7c3aed)"
+      },
+      {
+        type: "favorites",
+        name: "收藏夹",
+        desc: "高频复习",
+        count: store.favorites.length,
+        icon: "star",
+        bg: "linear-gradient(135deg, #f59e0b, #f97316)"
+      },
+      {
+        type: "mistakes",
+        name: "错词集",
+        desc: "重新巩固",
+        count: store.mistakes.length,
+        icon: "closeempty",
+        bg: "linear-gradient(135deg, #fb7185, #f43f5e)"
+      }
     ]);
     const toDisplayWord = (word) => {
       var _a;
@@ -156,7 +184,6 @@ const _sfc_main = {
       if (!book)
         return;
       await store.selectBook(book.id);
-      await store.loadWords(book.id);
       selectorVisible.value = false;
       searchKeyword.value = "";
     };
@@ -183,11 +210,13 @@ const _sfc_main = {
         const candidate = store.currentWord.english || store.currentWord.word || "";
         const sanitized = sanitizePronunciationText(candidate);
         const finalQuery = sanitized || candidate;
+        audioContext.stop();
         audioContext.src = `${DICT_VOICE_URL}${encodeURIComponent(finalQuery)}`;
         audioContext.play();
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/word-practice/word-detail.vue:281", "播放发音出错", error);
+        common_vendor.index.__f__("error", "at pages/word-practice/word-detail.vue:309", "播放发音出错", error);
         pronunciationState.error = "发音服务异常，请稍后再试";
+        resetAudioContext();
       } finally {
         pronunciationState.loading = false;
       }
@@ -201,16 +230,14 @@ const _sfc_main = {
         pronunciationState.error = "";
       });
       audioContext.onError((error) => {
-        common_vendor.index.__f__("error", "at pages/word-practice/word-detail.vue:296", "发音播放失败", error);
+        common_vendor.index.__f__("error", "at pages/word-practice/word-detail.vue:325", "发音播放失败", error);
         pronunciationState.error = "无法获取发音，请稍后重试";
+        pronunciationState.loading = false;
+        resetAudioContext();
       });
     };
     const destroyAudioContext = () => {
-      if (audioContext) {
-        audioContext.stop();
-        audioContext.destroy();
-        audioContext = null;
-      }
+      resetAudioContext();
     };
     const initDetailPage = async (bookId) => {
       if (initializing.value)
@@ -239,13 +266,9 @@ const _sfc_main = {
     });
     common_vendor.watch(
       () => store.selectedBookId,
-      (bookId) => {
-        var _a;
+      () => {
         currentPage.value = 1;
         searchKeyword.value = "";
-        if (bookId && !((_a = store.wordsByBook) == null ? void 0 : _a[bookId])) {
-          store.loadWords(bookId);
-        }
       }
     );
     common_vendor.onLoad((options) => {
@@ -267,30 +290,45 @@ const _sfc_main = {
           stats: heroStats.value,
           loading: common_vendor.unref(store).wordsLoading || common_vendor.unref(store).booksLoading
         }),
-        c: common_vendor.p({
+        c: common_vendor.o(playPronunciation),
+        d: common_vendor.o(toggleFavorite),
+        e: common_vendor.o(($event) => markCurrentWord("mastered")),
+        f: common_vendor.o(($event) => markCurrentWord("mistake")),
+        g: common_vendor.o(($event) => common_vendor.unref(store).setCurrentWordIndex(common_vendor.unref(store).currentWordIndex + 1)),
+        h: common_vendor.o(($event) => common_vendor.unref(store).setCurrentWordIndex(common_vendor.unref(store).currentWordIndex - 1)),
+        i: common_vendor.p({
+          word: common_vendor.unref(store).currentWord,
+          index: common_vendor.unref(store).currentWordIndex,
+          total: common_vendor.unref(store).currentWords.length,
+          ["mastery-label"]: masteryLabel.value,
+          ["is-favorite"]: isFavorite.value,
+          ["next-preview"]: nextPreview.value,
+          ["pronunciation-state"]: pronunciationState
+        }),
+        j: common_vendor.p({
           type: "search",
           size: "18",
           color: "#94a3b8"
         }),
-        d: common_vendor.o(onSearchConfirm),
-        e: searchKeyword.value,
-        f: common_vendor.o(($event) => searchKeyword.value = $event.detail.value),
-        g: searchKeyword.value
+        k: common_vendor.o(onSearchConfirm),
+        l: searchKeyword.value,
+        m: common_vendor.o(($event) => searchKeyword.value = $event.detail.value),
+        n: searchKeyword.value
       }, searchKeyword.value ? {
-        h: common_vendor.p({
+        o: common_vendor.p({
           type: "closeempty",
           size: "16",
           color: "#94a3b8"
         }),
-        i: common_vendor.o(clearSearch)
+        p: common_vendor.o(clearSearch)
       } : {}, {
-        j: common_vendor.t(filteredWords.value.length),
-        k: common_vendor.t(currentPage.value),
-        l: common_vendor.t(totalPages.value),
-        m: common_vendor.o(jumpRandom),
-        n: common_vendor.f(quickActions.value, (action, k0, i0) => {
+        q: common_vendor.t(filteredWords.value.length),
+        r: common_vendor.t(currentPage.value),
+        s: common_vendor.t(totalPages.value),
+        t: common_vendor.o(jumpRandom),
+        v: common_vendor.f(quickActions.value, (action, k0, i0) => {
           return {
-            a: "22e2a63f-3-" + i0,
+            a: "22e2a63f-4-" + i0,
             b: common_vendor.p({
               type: action.icon,
               size: "18",
@@ -303,21 +341,6 @@ const _sfc_main = {
             g: action.bg,
             h: common_vendor.o(($event) => handleQuickAction(action), action.type)
           };
-        }),
-        o: common_vendor.o(playPronunciation),
-        p: common_vendor.o(toggleFavorite),
-        q: common_vendor.o(($event) => markCurrentWord("mastered")),
-        r: common_vendor.o(($event) => markCurrentWord("mistake")),
-        s: common_vendor.o(($event) => common_vendor.unref(store).setCurrentWordIndex(common_vendor.unref(store).currentWordIndex + 1)),
-        t: common_vendor.o(($event) => common_vendor.unref(store).setCurrentWordIndex(common_vendor.unref(store).currentWordIndex - 1)),
-        v: common_vendor.p({
-          word: common_vendor.unref(store).currentWord,
-          index: common_vendor.unref(store).currentWordIndex,
-          total: common_vendor.unref(store).currentWords.length,
-          ["mastery-label"]: masteryLabel.value,
-          ["is-favorite"]: isFavorite.value,
-          ["next-preview"]: nextPreview.value,
-          ["pronunciation-state"]: pronunciationState
         }),
         w: common_vendor.o(changePage),
         x: common_vendor.o(handleWordSelect),

@@ -1,0 +1,24 @@
+{
+  "question_id": "WD-2",
+  "question": "WordBookSelector 回调是否导致额外重复请求？",
+  "reason_for_deep_dive": "用户切换词书时同样观察到双请求，需要确认页面事件实现是否冗余调用。",
+  "sources": [
+    {
+      "path": "pages/word-practice/word-detail.vue:244-255",
+      "insight": "`handleSelectBook` 依次执行 `await store.selectBook(book.id)` 与 `await store.loadWords(book.id)`，即使 `selectBook` 已经在内部 `await loadWords`。"
+    },
+    {
+      "path": "components/word-practice/WordBookSelector.vue",
+      "insight": "组件本身只发射 `select` 事件，不会主动请求，确认重复逻辑出自页面级 handler。"
+    }
+  ],
+  "findings": [
+    "selector 事件回调明确写死双调用：`selectBook`（其自身已触发 `loadWords`）+ 再次显式 `loadWords`，导致 `/word-books/{id}/words` 在切换操作中执行两遍。",
+    "watchers/selector 都在切换后重置搜索/分页，因此只需让 selector 回调负责 UI 复位即可。"
+  ],
+  "next_actions": [
+    "移除 `handleSelectBook` 中的第二次 `store.loadWords(book.id)`，只保留 `store.selectBook` 与搜索/分页复位。",
+    "确保 watch 中不再触发网络请求，避免与 selector 行为冲突。"
+  ],
+  "status": "answered"
+}

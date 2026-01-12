@@ -1,22 +1,22 @@
-﻿{
+{
   "interfaceContract": {
     "status": true,
-    "notes": "word practice 页面消费 `Array<{english:string,chinese:string}>`，内部扩展收藏/复习等状态。"
+    "notes": "word-detail 通过 `useWordPracticeStore.loadWords(bookId)` 访问 `/word-books/{id}/words`，唯一变量是 `bookId`，响应提供 `{ book, words[] }`。"
   },
   "techRationale": {
     "status": true,
-    "notes": "使用局部分页/搜索避免一次性渲染全部，继续沿用uni-app组件与InnerAudioContext播放发音。"
+    "notes": "沿用 uni-app + Vue 3 + Pinia + `utils/request.js` 组合，计划把网络请求收敛到 store action，watcher/事件只负责 UI 状态。"
   },
   "risksIdentified": {
     "status": true,
     "notes": [
-      "渲染481条时可能卡顿，需要分页或抽样",
-      "缺少音标/例句需调整UI避免空字段",
-      "数据体积增大需确保打包大小可控"
+      "移除 watcher 中的 `loadWords` 后需确认仍能在无缓存的情况下加载默认词书",
+      "selector 只调用 `selectBook` 时要关注加载中的 UX（loading、禁用按钮）",
+      "目前缺少自动化测试统计请求次数，需要依赖日志/断点确认"
     ]
   },
   "validationPlan": {
     "status": true,
-    "notes": "更新tests/wordPractice.spec.js校验中文/英文，手动验证搜索、收藏、发音与分页。"
+    "notes": "通过在 store/service 加计数日志或断点观察 `fetchWordBookWords` 调用次数；同时运行 `node tests/wordPractice.spec.js` 作为回归并手动切换词书确认行为。"
   }
 }

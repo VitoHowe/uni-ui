@@ -1,0 +1,24 @@
+{
+  "question_id": "WD-1",
+  "question": "word-detail 初始化为什么会触发两次 `/word-books/{id}/words` 请求？",
+  "reason_for_deep_dive": "首次进入页面时接口瞬间被调用两次，需要找出触发路径（生命周期、watch、store action）以制定修复方案。",
+  "sources": [
+    {
+      "path": "pages/word-practice/word-detail.vue:309-332",
+      "insight": "`initDetailPage` 会 `await store.selectBook(bookId)`，而 `selectBook` 内部默认 `preloadWords=true`；同一文件的 `watch(() => store.selectedBookId)` 在 state 更改瞬间又调用 `store.loadWords(bookId)`。"
+    },
+    {
+      "path": "stores/wordPractice.js:74-101",
+      "insight": "`selectBook` 设置 `selectedBookId` 后会根据 `changed || !this.wordsByBook[bookId]` 判断是否 `await this.loadWords(bookId)`，其执行顺序在 watcher 之后。"
+    }
+  ],
+  "findings": [
+    "watch 钩子在 `selectedBookId` 赋值瞬间执行，此时 `wordsByBook[bookId]` 为空，因此立即调用 `store.loadWords(bookId)`（第一次）。",
+    "`selectBook` 继续执行并因 `preloadWords=true` 再次 `await loadWords(bookId)`（第二次），形成双请求；`initDetailPage` 末尾的 fallback 仅在 `currentWords` 仍为空时触发，不会造成第三次请求。"
+  ],
+  "next_actions": [
+    "保留 watcher 中的分页/搜索 reset，但移除 `store.loadWords` 调用，把加载入口收敛到 `selectBook`（或显式刷新按钮）。",
+    "如未来需要进一步保障，可在 store 内部增加 in-flight guard（例如 `inFlightLoads[bookId]`）来吸收重复调用。"
+  ],
+  "status": "answered"
+}
