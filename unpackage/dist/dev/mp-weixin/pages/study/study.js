@@ -1,6 +1,5 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
-const utils_wordBank = require("../../utils/wordBank.js");
 if (!Array) {
   const _component_uni_progress = common_vendor.resolveComponent("uni-progress");
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
@@ -17,26 +16,12 @@ if (!Math) {
   (_easycom_uni_icons + _easycom_uni_section + _easycom_uni_list_item + _easycom_uni_list + CustomTabBar)();
 }
 const CustomTabBar = () => "../../components/CustomTabBar.js";
-const WORD_PROGRESS_KEY = "WORD_PRACTICE_PROGRESS";
 const _sfc_main = {
   __name: "study",
   setup(__props) {
-    const readWordProgress = () => {
-      try {
-        const snapshot = common_vendor.index.getStorageSync(WORD_PROGRESS_KEY) || {};
-        return {
-          favorites: Array.isArray(snapshot.favorites) ? snapshot.favorites : [],
-          mastered: Array.isArray(snapshot.mastered) ? snapshot.mastered : [],
-          review: Array.isArray(snapshot.review) ? snapshot.review : []
-        };
-      } catch (error) {
-        common_vendor.index.__f__("warn", "at pages/study/study.vue:98", "读取单词进度失败", error);
-        return { favorites: [], mastered: [], review: [] };
-      }
-    };
     const studyModules = common_vendor.reactive([
       { name: "项目管理基础", icon: "home", color: "#007AFF", progress: 85 },
-      { name: "项目整合管理", icon: "gear", color: "#28a745", progress: 72 },
+      { name: "项目综合管理", icon: "gear", color: "#28a745", progress: 72 },
       { name: "项目范围管理", icon: "list", color: "#ffc107", progress: 45 },
       { name: "项目进度管理", icon: "calendar", color: "#dc3545", progress: 30 },
       { name: "项目成本管理", icon: "wallet", color: "#6610f2", progress: 15 },
@@ -45,40 +30,19 @@ const _sfc_main = {
     const recentStudy = common_vendor.reactive([
       {
         title: "项目章程制定",
-        description: "学习如何制定项目章程，明确项目目标。",
+        description: "学习如何制定项目章程，明确项目目标",
         date: "今天"
       },
       {
         title: "工作分解结构",
-        description: "掌握WBS的创建方法和实践技巧。",
+        description: "掌握WBS的创建方法与实践经验",
         date: "昨天"
       },
       {
         title: "风险识别技巧",
-        description: "项目风险识别的常用方法和工具。",
+        description: "项目风险识别的方法与工具",
         date: "2天前"
       }
-    ]);
-    const wordPracticeSummary = common_vendor.reactive({
-      totalWords: utils_wordBank.wordBank.length,
-      masteredWords: 0,
-      reviewWords: 0,
-      favorites: 0
-    });
-    const refreshWordSummary = () => {
-      const snapshot = readWordProgress();
-      wordPracticeSummary.masteredWords = snapshot.mastered.length;
-      wordPracticeSummary.reviewWords = snapshot.review.length;
-      wordPracticeSummary.favorites = snapshot.favorites.length;
-    };
-    refreshWordSummary();
-    common_vendor.onShow(() => {
-      refreshWordSummary();
-    });
-    const wordEntryStats = common_vendor.computed(() => [
-      { label: "词库总量", value: wordPracticeSummary.totalWords },
-      { label: "已掌握", value: wordPracticeSummary.masteredWords },
-      { label: "待复习", value: wordPracticeSummary.reviewWords }
     ]);
     const enterModule = (module) => {
       common_vendor.index.showToast({
@@ -98,7 +62,7 @@ const _sfc_main = {
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/study/study.vue:184", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/study/study.vue:128", "切换到tab:", index);
     };
     return (_ctx, _cache) => {
       return {
@@ -133,26 +97,23 @@ const _sfc_main = {
           type: "line",
           padding: true
         }),
-        d: common_vendor.f(wordEntryStats.value, (stat, k0, i0) => {
-          return {
-            a: common_vendor.t(stat.value),
-            b: common_vendor.t(stat.label),
-            c: stat.label
-          };
+        d: common_vendor.p({
+          type: "arrowright",
+          size: "18",
+          color: "#0f62fe"
         }),
         e: common_vendor.o(goToWordPractice),
-        f: common_vendor.t(wordPracticeSummary.favorites),
-        g: common_vendor.p({
+        f: common_vendor.p({
           title: "单词练习",
           type: "line",
           padding: true
         }),
-        h: common_vendor.f(recentStudy, (item, index, i0) => {
+        g: common_vendor.f(recentStudy, (item, index, i0) => {
           return {
-            a: "3f273c1e-8-" + i0 + "," + ("3f273c1e-7-" + i0),
+            a: "3f273c1e-9-" + i0 + "," + ("3f273c1e-8-" + i0),
             b: index,
             c: common_vendor.o(($event) => continueStudy(item), index),
-            d: "3f273c1e-7-" + i0 + ",3f273c1e-6",
+            d: "3f273c1e-8-" + i0 + ",3f273c1e-7",
             e: common_vendor.p({
               title: item.title,
               note: item.description,
@@ -161,18 +122,18 @@ const _sfc_main = {
             })
           };
         }),
-        i: common_vendor.p({
+        h: common_vendor.p({
           type: "book",
           size: "20",
           color: "#007AFF"
         }),
-        j: common_vendor.p({
+        i: common_vendor.p({
           title: "最近学习",
           type: "line",
           padding: true
         }),
-        k: common_vendor.o(onTabChange),
-        l: common_vendor.p({
+        j: common_vendor.o(onTabChange),
+        k: common_vendor.p({
           current: 1
         })
       };

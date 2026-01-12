@@ -60,6 +60,14 @@ export const API_ENDPOINTS = {
     UPDATE: '/questions',           // 更新题目 /{id}
     DELETE: '/questions'            // 删除题目 /{id}
   },
+
+  // 单词练习
+  WORD: {
+    BOOKS: '/word-books',                 // 单词书列表
+    BOOK_WORDS: '/word-practice/books',   // /{bookId}/words
+    PROGRESS: '/word-practice/books',     // /{bookId}/progress
+    STATE: '/word-practice/books'         // /{bookId}/state
+  },
   
   // 文件管理
   FILES: {
