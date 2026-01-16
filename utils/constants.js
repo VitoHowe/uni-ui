@@ -40,44 +40,18 @@ export const API_ENDPOINTS = {
   WORD_BOOKS: {
     LIST: '/word-books',
     WORDS: (bookId) => `/word-books/${bookId}/words`,
-    PROGRESS: (bookId) => `/word-books/${bookId}/progress`
-  },
-  
-  // 用户管理
-  USERS: {
-    LIST: '/users',                 // 用户列表
-    DETAIL: '/users',               // 用户详情 /{id}
-    UPDATE: '/users',               // 更新用户 /{id}
-    DELETE: '/users'                // 删除用户 /{id}
   },
   
   // 题库管理
   QUESTIONS: {
-    LIST: '/questions',             // 题目列表
-    DETAIL: '/questions',           // 题目详情 /{id}
     BANKS: '/questions/banks',      // 题库列表
     BANK_DETAIL: '/questions/banks',// 题库详情 /{id}
-    UPDATE: '/questions',           // 更新题目 /{id}
-    DELETE: '/questions'            // 删除题目 /{id}
-  },
-
-  // 单词练习
-  WORD: {
-    BOOKS: '/word-books',                 // 单词书列表
-    BOOK_WORDS: '/word-practice/books',   // /{bookId}/words
-    PROGRESS: '/word-practice/books',     // /{bookId}/progress
-    STATE: '/word-practice/books'         // /{bookId}/state
   },
   
   // 文件管理
   FILES: {
     UPLOAD: '/files/upload',        // 文件上传
-    LIST: '/files',                 // 文件列表
-    DETAIL: '/files',               // 文件详情 /{id}
-    PARSE: '/files',                // 解析文件 /{id}/parse
-    PARSE_STATUS: '/files',         // 解析状态 /{id}/parse-status
-    DELETE: '/files'                // 删除文件 /{id}
-  }
+  },
 }
 
 // 本地存储Key

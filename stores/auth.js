@@ -316,42 +316,6 @@ export const useAuthStore = defineStore('auth', {
     },
     
     /**
-     * 更新用户资料
-     * @param {Object} updateData - 更新数据
-     * @returns {Promise<void>}
-     */
-    async updateUserProfile(updateData) {
-      if (!this.isAuthenticated) {
-        throw new Error('用户未登录')
-      }
-      
-      try {
-        console.log('📝 更新用户资料', updateData)
-        
-        const updatedUser = await request.put(API_ENDPOINTS.AUTH.PROFILE, updateData)
-        
-        // 更新本地用户信息
-        this.user = updatedUser
-        UserManager.setUserInfo(updatedUser)
-        
-        console.log('✅ 用户资料更新成功')
-        
-        uni.showToast({
-          title: '资料更新成功',
-          icon: 'success'
-        })
-        
-      } catch (error) {
-        console.error('❌ 更新用户资料失败:', error)
-        uni.showToast({
-          title: error.message || '更新失败',
-          icon: 'error'
-        })
-        throw error
-      }
-    },
-    
-    /**
      * 退出登录
      * @param {boolean} callApi - 是否调用登出API
      * @returns {Promise<void>}
