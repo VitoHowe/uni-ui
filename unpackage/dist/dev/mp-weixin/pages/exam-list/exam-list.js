@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const utils_request = require("../../utils/request.js");
+const utils_subject = require("../../utils/subject.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
   const _easycom_uni_popup2 = common_vendor.resolveComponent("uni-popup");
@@ -17,6 +18,9 @@ const _sfc_main = {
     const searchKeyword = common_vendor.ref("");
     const loading = common_vendor.ref(false);
     const bankList = common_vendor.ref([]);
+    const subjects = common_vendor.ref([]);
+    const selectedSubject = common_vendor.ref(utils_subject.SubjectStorage.get());
+    const loadingSubjects = common_vendor.ref(false);
     const selectedBank = common_vendor.ref(null);
     const sortOptions = [
       { label: "最新创建", value: "created_desc" },
@@ -29,6 +33,90 @@ const _sfc_main = {
     const actionPopup = common_vendor.ref(null);
     const modePopup = common_vendor.ref(null);
     const chapterSelectPopup = common_vendor.ref(null);
+    const syncSelectedSubject = (subject) => {
+      selectedSubject.value = subject;
+      utils_subject.SubjectStorage.set(subject);
+    };
+    const applySubjectFromRoute = () => {
+      var _a, _b;
+      const pages = getCurrentPages();
+      const currentPage = pages[pages.length - 1];
+      const subjectId = (_a = currentPage == null ? void 0 : currentPage.options) == null ? void 0 : _a.subjectId;
+      const subjectName = (_b = currentPage == null ? void 0 : currentPage.options) == null ? void 0 : _b.subjectName;
+      if (subjectId) {
+        syncSelectedSubject({
+          id: Number(subjectId),
+          name: subjectName ? decodeURIComponent(subjectName) : `科目 ${subjectId}`,
+          code: null
+        });
+      }
+    };
+    const fetchSubjects = async () => {
+      var _a;
+      if (loadingSubjects.value)
+        return;
+      loadingSubjects.value = true;
+      try {
+        if (!ensureSubjectSelected()) {
+          loading.value = false;
+          return;
+        }
+        const subjectId = (_a = selectedSubject.value) == null ? void 0 : _a.id;
+        const data = await utils_request.get("/subjects");
+        const list = (data.subjects || []).map(utils_subject.normalizeSubject);
+        subjects.value = list;
+        if (!selectedSubject.value && list.length) {
+          syncSelectedSubject(list[0]);
+          return;
+        }
+        if (selectedSubject.value) {
+          const matched = list.find((item) => item.id === selectedSubject.value.id);
+          if (matched) {
+            syncSelectedSubject(matched);
+          } else if (list.length) {
+            syncSelectedSubject(list[0]);
+          }
+        }
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:341", "获取科目失败:", error);
+        common_vendor.index.showToast({
+          title: error.message || "获取科目失败",
+          icon: "none"
+        });
+      } finally {
+        loadingSubjects.value = false;
+      }
+    };
+    const openSubjectPicker = () => {
+      if (loadingSubjects.value)
+        return;
+      if (!subjects.value.length) {
+        common_vendor.index.showToast({
+          title: "暂无可选科目",
+          icon: "none"
+        });
+        return;
+      }
+      common_vendor.index.showActionSheet({
+        itemList: subjects.value.map((item) => item.name),
+        success: async (res) => {
+          const subject = subjects.value[res.tapIndex];
+          if (subject) {
+            syncSelectedSubject(subject);
+            await fetchBankList();
+          }
+        }
+      });
+    };
+    const ensureSubjectSelected = () => {
+      if (selectedSubject.value)
+        return true;
+      common_vendor.index.showToast({
+        title: "请先选择科目",
+        icon: "none"
+      });
+      return false;
+    };
     const totalBanks = common_vendor.computed(() => bankList.value.length);
     const totalQuestions = common_vendor.computed(() => {
       return bankList.value.reduce((sum, bank) => sum + bank.total_questions, 0);
@@ -64,14 +152,33 @@ const _sfc_main = {
       });
       return list;
     });
+    const initPage = async () => {
+      applySubjectFromRoute();
+      const stored = utils_subject.SubjectStorage.get();
+      if (stored) {
+        selectedSubject.value = stored;
+      }
+      await fetchSubjects();
+      if (!selectedSubject.value) {
+        bankList.value = [];
+        return;
+      }
+      await fetchBankList();
+    };
     common_vendor.onShow(() => {
-      common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:324", "📱 题库列表页面显示，刷新数据...");
-      fetchBankList();
+      common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:444", "📱 题库列表页面显示，刷新数据...");
+      initPage();
     });
     const fetchBankList = async () => {
+      var _a;
       loading.value = true;
       try {
-        const response = await utils_request.get("/questions/banks");
+        if (!ensureSubjectSelected()) {
+          loading.value = false;
+          return;
+        }
+        const subjectId = (_a = selectedSubject.value) == null ? void 0 : _a.id;
+        const response = await utils_request.get(`/subjects/${subjectId}/banks`, { page: 1, limit: 20 });
         const banks = response.banks || [];
         bankList.value = banks.map((bank) => {
           const studyProgress = bank.study_progress || {};
@@ -101,9 +208,9 @@ const _sfc_main = {
             current_question_number: 0
           };
         });
-        common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:367", "✅ 题库列表加载完成，已使用study_progress优化接口调用");
+        common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:492", "✅ 题库列表加载完成，已使用study_progress优化接口调用");
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:369", "获取题库列表失败:", error);
+        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:494", "获取题库列表失败:", error);
         common_vendor.index.showToast({
           title: error.message || "加载失败",
           icon: "none"
@@ -186,7 +293,7 @@ const _sfc_main = {
           }
         } catch (error) {
           common_vendor.index.hideLoading();
-          common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:479", `获取题库${bank.id}章节失败:`, error);
+          common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:604", `获取题库${bank.id}章节失败:`, error);
           common_vendor.index.showToast({
             title: "加载章节失败",
             icon: "none"
@@ -207,7 +314,7 @@ const _sfc_main = {
           common_vendor.index.hideLoading();
         } catch (error) {
           common_vendor.index.hideLoading();
-          common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:506", `获取题库${bank.id}章节进度失败:`, error);
+          common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:631", `获取题库${bank.id}章节进度失败:`, error);
           bank.chapterProgress = [];
         }
       }
@@ -245,7 +352,7 @@ const _sfc_main = {
         }
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:549", `获取整卷练习进度失败:`, error);
+        common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:674", `获取整卷练习进度失败:`, error);
       }
       navigateToExam("full", startChapterId, startQuestionNumber);
     };
@@ -278,9 +385,12 @@ const _sfc_main = {
       }
     };
     const navigateToExam = (mode, chapterId, questionNumber = 1) => {
+      var _a;
       const bank = selectedBank.value;
+      const subjectId = (_a = selectedSubject.value) == null ? void 0 : _a.id;
+      const subjectParam = subjectId ? `&subjectId=${subjectId}` : "";
       common_vendor.index.navigateTo({
-        url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}`
+        url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}${subjectParam}`
       });
     };
     const getChapterName = (bank, chapterId) => {
@@ -340,10 +450,10 @@ const _sfc_main = {
                 icon: "success",
                 duration: 2e3
               });
-              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:662", `🔄 题库 ${bank.bank_name} 学习进度已重置`);
+              common_vendor.index.__f__("log", "at pages/exam-list/exam-list.vue:789", `🔄 题库 ${bank.bank_name} 学习进度已重置`);
             } catch (error) {
               common_vendor.index.hideLoading();
-              common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:665", "重置进度失败:", error);
+              common_vendor.index.__f__("error", "at pages/exam-list/exam-list.vue:792", "重置进度失败:", error);
               common_vendor.index.showToast({
                 title: error.message || "重置失败",
                 icon: "none",
@@ -360,63 +470,71 @@ const _sfc_main = {
       });
     };
     return (_ctx, _cache) => {
-      var _a;
+      var _a, _b;
       return common_vendor.e({
-        a: common_vendor.p({
+        a: common_vendor.t(((_a = selectedSubject.value) == null ? void 0 : _a.name) || "请选择科目"),
+        b: common_vendor.t(subjects.value.length ? "切换" : "加载中"),
+        c: common_vendor.p({
+          type: "arrowdown",
+          size: "16",
+          color: "#999"
+        }),
+        d: common_vendor.o(openSubjectPicker),
+        e: common_vendor.p({
           type: "search",
           size: "18",
           color: "#999"
         }),
-        b: common_vendor.o([($event) => searchKeyword.value = $event.detail.value, handleSearch]),
-        c: searchKeyword.value,
-        d: searchKeyword.value
+        f: common_vendor.o([($event) => searchKeyword.value = $event.detail.value, handleSearch]),
+        g: searchKeyword.value,
+        h: searchKeyword.value
       }, searchKeyword.value ? {
-        e: common_vendor.o(clearSearch),
-        f: common_vendor.p({
+        i: common_vendor.o(clearSearch),
+        j: common_vendor.p({
           type: "clear",
           size: "16",
           color: "#999"
         })
       } : {}, {
-        g: common_vendor.p({
+        k: common_vendor.p({
           type: "funnel",
           size: "18",
           color: "#333"
         }),
-        h: common_vendor.o(showFilterPopup),
-        i: common_vendor.t(totalBanks.value),
-        j: common_vendor.t(totalQuestions.value),
-        k: common_vendor.t(todayAdded.value),
-        l: loading.value
+        l: common_vendor.o(showFilterPopup),
+        m: common_vendor.t(totalBanks.value),
+        n: common_vendor.t(totalQuestions.value),
+        o: common_vendor.t(todayAdded.value),
+        p: loading.value
       }, loading.value ? {
-        m: common_vendor.p({
+        q: common_vendor.p({
           type: "spinner-cycle",
           size: "40",
           color: "#007AFF"
         })
       } : filteredBankList.value.length === 0 ? {
-        o: common_vendor.p({
+        s: common_vendor.p({
           type: "folder-add",
           size: "80",
           color: "#ddd"
         }),
-        p: common_vendor.p({
+        t: common_vendor.p({
           type: "plus",
           size: "16",
           color: "#fff"
         }),
-        q: common_vendor.o(goToUpload)
+        v: common_vendor.o(goToUpload)
       } : {
-        r: common_vendor.f(filteredBankList.value, (bank, k0, i0) => {
+        w: common_vendor.f(filteredBankList.value, (bank, k0, i0) => {
           return common_vendor.e({
-            a: "6b8bcde8-6-" + i0,
+            a: "6b8bcde8-7-" + i0,
             b: common_vendor.t(bank.bank_name),
             c: common_vendor.t(bank.file_name),
-            d: "6b8bcde8-7-" + i0,
+            d: "6b8bcde8-8-" + i0,
             e: common_vendor.o(($event) => showMoreActions(bank), bank.id),
-            f: "6b8bcde8-8-" + i0,
+            f: "6b8bcde8-9-" + i0,
             g: common_vendor.t(bank.total_questions),
-            h: "6b8bcde8-9-" + i0,
+            h: "6b8bcde8-10-" + i0,
             i: common_vendor.t(formatDate(bank.created_at)),
             j: common_vendor.f(getQuestionTypes(bank), (type, index, i1) => {
               return {
@@ -433,47 +551,47 @@ const _sfc_main = {
           }, bank.completed_count > 0 ? {
             o: common_vendor.t(bank.completed_count)
           } : {}, {
-            p: "6b8bcde8-10-" + i0,
+            p: "6b8bcde8-11-" + i0,
             q: common_vendor.t(bank.completed_count > 0 ? "继续学习" : "开始练习"),
             r: common_vendor.o(($event) => startExam(bank), bank.id),
             s: bank.id,
             t: common_vendor.o(($event) => startExam(bank), bank.id)
           });
         }),
-        s: common_vendor.p({
+        x: common_vendor.p({
           type: "paperplane",
           size: "24",
           color: "#fff"
         }),
-        t: common_vendor.p({
+        y: common_vendor.p({
           type: "more-filled",
           size: "20",
           color: "#999"
         }),
-        v: common_vendor.p({
+        z: common_vendor.p({
           type: "compose",
           size: "16",
           color: "#666"
         }),
-        w: common_vendor.p({
+        A: common_vendor.p({
           type: "calendar",
           size: "16",
           color: "#666"
         }),
-        x: common_vendor.p({
+        B: common_vendor.p({
           type: "forward",
           size: "16",
           color: "#fff"
         })
       }, {
-        n: filteredBankList.value.length === 0,
-        y: common_vendor.o(resetFilter),
-        z: common_vendor.f(sortOptions, (sort, k0, i0) => {
+        r: filteredBankList.value.length === 0,
+        C: common_vendor.o(resetFilter),
+        D: common_vendor.f(sortOptions, (sort, k0, i0) => {
           return common_vendor.e({
             a: common_vendor.t(sort.label),
             b: currentSort.value === sort.value
           }, currentSort.value === sort.value ? {
-            c: "6b8bcde8-12-" + i0 + ",6b8bcde8-11",
+            c: "6b8bcde8-13-" + i0 + ",6b8bcde8-12",
             d: common_vendor.p({
               type: "checkmarkempty",
               size: "18",
@@ -485,84 +603,84 @@ const _sfc_main = {
             g: common_vendor.o(($event) => selectSort(sort.value), sort.value)
           });
         }),
-        A: common_vendor.o(applyFilter),
-        B: common_vendor.sr(filterPopup, "6b8bcde8-11", {
+        E: common_vendor.o(applyFilter),
+        F: common_vendor.sr(filterPopup, "6b8bcde8-12", {
           "k": "filterPopup"
         }),
-        C: common_vendor.p({
+        G: common_vendor.p({
           type: "bottom"
         }),
-        D: common_vendor.p({
+        H: common_vendor.p({
           type: "redo",
           size: "20",
           color: "#333"
         }),
-        E: common_vendor.o(shareBank),
-        F: selectedBank.value && selectedBank.value.completed_count > 0
+        I: common_vendor.o(shareBank),
+        J: selectedBank.value && selectedBank.value.completed_count > 0
       }, selectedBank.value && selectedBank.value.completed_count > 0 ? {
-        G: common_vendor.p({
+        K: common_vendor.p({
           type: "refreshempty",
           size: "20",
           color: "#ff9500"
         }),
-        H: common_vendor.o(resetBankProgress)
+        L: common_vendor.o(resetBankProgress)
       } : {}, {
-        I: common_vendor.o(closeActionPopup),
-        J: common_vendor.sr(actionPopup, "6b8bcde8-13", {
+        M: common_vendor.o(closeActionPopup),
+        N: common_vendor.sr(actionPopup, "6b8bcde8-14", {
           "k": "actionPopup"
         }),
-        K: common_vendor.p({
+        O: common_vendor.p({
           type: "bottom"
         }),
-        L: common_vendor.p({
+        P: common_vendor.p({
           type: "closeempty",
           size: "20",
           color: "#999"
         }),
-        M: common_vendor.o(($event) => modePopup.value.close()),
-        N: common_vendor.p({
+        Q: common_vendor.o(($event) => modePopup.value.close()),
+        R: common_vendor.p({
           type: "list",
           size: "40",
           color: "#667eea"
         }),
-        O: common_vendor.o(startChapterPractice),
-        P: common_vendor.p({
+        S: common_vendor.o(startChapterPractice),
+        T: common_vendor.p({
           type: "paperplane",
           size: "40",
           color: "#f5576c"
         }),
-        Q: common_vendor.o(startFullPractice),
-        R: common_vendor.sr(modePopup, "6b8bcde8-16", {
+        U: common_vendor.o(startFullPractice),
+        V: common_vendor.sr(modePopup, "6b8bcde8-17", {
           "k": "modePopup"
         }),
-        S: common_vendor.p({
+        W: common_vendor.p({
           type: "center"
         }),
-        T: common_vendor.p({
+        X: common_vendor.p({
           type: "closeempty",
           size: "20",
           color: "#999"
         }),
-        U: common_vendor.o(($event) => chapterSelectPopup.value.close()),
-        V: common_vendor.f((_a = selectedBank.value) == null ? void 0 : _a.chapters, (chapter, k0, i0) => {
+        Y: common_vendor.o(($event) => chapterSelectPopup.value.close()),
+        Z: common_vendor.f((_b = selectedBank.value) == null ? void 0 : _b.chapters, (chapter, k0, i0) => {
           return {
             a: common_vendor.t(chapter.chapter_name),
             b: common_vendor.t(chapter.question_count),
             c: common_vendor.t(getChapterProgressText(chapter)),
-            d: "6b8bcde8-22-" + i0 + ",6b8bcde8-20",
+            d: "6b8bcde8-23-" + i0 + ",6b8bcde8-21",
             e: chapter.id,
             f: common_vendor.o(($event) => selectChapterAndStart(chapter), chapter.id)
           };
         }),
-        W: common_vendor.p({
+        aa: common_vendor.p({
           type: "forward",
           size: "16",
           color: "#999"
         }),
-        X: common_vendor.sr(chapterSelectPopup, "6b8bcde8-20", {
+        ab: common_vendor.sr(chapterSelectPopup, "6b8bcde8-21", {
           "k": "chapterSelectPopup"
         }),
-        Y: common_vendor.p({
+        ac: common_vendor.p({
           type: "bottom"
         })
       });

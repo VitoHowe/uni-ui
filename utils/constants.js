@@ -48,6 +48,11 @@ export const API_ENDPOINTS = {
     BANK_DETAIL: '/questions/banks',// 题库详情 /{id}
   },
   
+  SUBJECTS: {
+    LIST: '/subjects',
+    BANKS: (subjectId) => `/subjects/${subjectId}/banks`,
+  },
+  
   // 文件管理
   FILES: {
     UPLOAD: '/files/upload',        // 文件上传
@@ -60,7 +65,8 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER_INFO: 'user_info',
   LOGIN_STATE: 'login_state',
-  TOKEN_EXPIRES_AT: 'token_expires_at'
+  TOKEN_EXPIRES_AT: 'token_expires_at',
+  SELECTED_SUBJECT: 'selected_subject'
 }
 
 // HTTP状态码

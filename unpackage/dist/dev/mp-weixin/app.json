@@ -10,6 +10,9 @@
     "pages/login/login",
     "pages/debug/debug",
     "pages/exam-list/exam-list",
+    "pages/real-exam-list/real-exam-list",
+    "pages/special-list/special-list",
+    "pages/real-exam-wrong/real-exam-wrong",
     "pages/exam/exam"
   ],
   "window": {

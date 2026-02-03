@@ -7118,9 +7118,9 @@ function isConsoleWritable() {
   return isWritable;
 }
 function initRuntimeSocketService() {
-  const hosts = "127.0.0.1,192.168.8.178,172.24.64.1";
+  const hosts = "192.168.31.31,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_nESJzJ";
+  const id = "mp-weixin_T4H-tb";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8737,6 +8737,24 @@ const pages = [
     path: "pages/exam-list/exam-list",
     style: {
       navigationBarTitleText: "题库列表"
+    }
+  },
+  {
+    path: "pages/real-exam-list/real-exam-list",
+    style: {
+      navigationBarTitleText: "真题练习"
+    }
+  },
+  {
+    path: "pages/special-list/special-list",
+    style: {
+      navigationBarTitleText: "专项训练"
+    }
+  },
+  {
+    path: "pages/real-exam-wrong/real-exam-wrong",
+    style: {
+      navigationBarTitleText: "真题错题"
     }
   },
   {

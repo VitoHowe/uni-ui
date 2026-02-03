@@ -14,6 +14,9 @@ if (!Math) {
   "./pages/login/login.js";
   "./pages/debug/debug.js";
   "./pages/exam-list/exam-list.js";
+  "./pages/real-exam-list/real-exam-list.js";
+  "./pages/special-list/special-list.js";
+  "./pages/real-exam-wrong/real-exam-wrong.js";
   "./pages/exam/exam.js";
 }
 const _sfc_main = {

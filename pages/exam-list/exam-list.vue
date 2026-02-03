@@ -1,6 +1,17 @@
 <template>
   <view class="exam-list-container">
     <!-- 顶部搜索栏 -->
+    <view class="subject-bar" @click="openSubjectPicker">
+      <view class="subject-info">
+        <text class="subject-label">当前科目</text>
+        <text class="subject-name">{{ selectedSubject?.name || '请选择科目' }}</text>
+      </view>
+      <view class="subject-action">
+        <text class="subject-action-text">{{ subjects.length ? '切换' : '加载中' }}</text>
+        <uni-icons type="arrowdown" size="16" color="#999" />
+      </view>
+    </view>
+
     <view class="search-section">
       <view class="search-box">
         <uni-icons type="search" size="18" color="#999" />
@@ -244,6 +255,7 @@
 import { ref, reactive, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { get, del } from '@/utils/request.js'
+import { SubjectStorage, normalizeSubject } from '@/utils/subject.js'
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -253,6 +265,10 @@ const loading = ref(false)
 
 // 题库列表
 const bankList = ref([])
+
+const subjects = ref([])
+const selectedSubject = ref(SubjectStorage.get())
+const loadingSubjects = ref(false)
 
 // 当前选中的题库
 const selectedBank = ref(null)
@@ -273,6 +289,95 @@ const filterPopup = ref(null)
 const actionPopup = ref(null)
 const modePopup = ref(null)
 const chapterSelectPopup = ref(null)
+
+const syncSelectedSubject = (subject) => {
+  selectedSubject.value = subject
+  SubjectStorage.set(subject)
+}
+
+const applySubjectFromRoute = () => {
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1]
+  const subjectId = currentPage?.options?.subjectId
+  const subjectName = currentPage?.options?.subjectName
+
+  if (subjectId) {
+    syncSelectedSubject({
+      id: Number(subjectId),
+      name: subjectName ? decodeURIComponent(subjectName) : `科目 ${subjectId}`,
+      code: null
+    })
+  }
+}
+
+const fetchSubjects = async () => {
+  if (loadingSubjects.value) return
+  loadingSubjects.value = true
+  try {
+    if (!ensureSubjectSelected()) {
+      loading.value = false
+      return
+    }
+
+    const subjectId = selectedSubject.value?.id
+    const data = await get('/subjects')
+    const list = (data.subjects || []).map(normalizeSubject)
+    subjects.value = list
+
+    if (!selectedSubject.value && list.length) {
+      syncSelectedSubject(list[0])
+      return
+    }
+
+    if (selectedSubject.value) {
+      const matched = list.find(item => item.id === selectedSubject.value.id)
+      if (matched) {
+        syncSelectedSubject(matched)
+      } else if (list.length) {
+        syncSelectedSubject(list[0])
+      }
+    }
+  } catch (error) {
+    console.error('获取科目失败:', error)
+    uni.showToast({
+      title: error.message || '获取科目失败',
+      icon: 'none'
+    })
+  } finally {
+    loadingSubjects.value = false
+  }
+}
+
+const openSubjectPicker = () => {
+  if (loadingSubjects.value) return
+  if (!subjects.value.length) {
+    uni.showToast({
+      title: '暂无可选科目',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.showActionSheet({
+    itemList: subjects.value.map(item => item.name),
+    success: async (res) => {
+      const subject = subjects.value[res.tapIndex]
+      if (subject) {
+        syncSelectedSubject(subject)
+        await fetchBankList()
+      }
+    }
+  })
+}
+
+const ensureSubjectSelected = () => {
+  if (selectedSubject.value) return true
+  uni.showToast({
+    title: '请先选择科目',
+    icon: 'none'
+  })
+  return false
+}
 
 // 统计数据
 const totalBanks = computed(() => bankList.value.length)
@@ -320,17 +425,37 @@ const filteredBankList = computed(() => {
 })
 
 // 页面显示时刷新题库列表（包括首次加载和从答题页返回）
+const initPage = async () => {
+  applySubjectFromRoute()
+  const stored = SubjectStorage.get()
+  if (stored) {
+    selectedSubject.value = stored
+  }
+
+  await fetchSubjects()
+  if (!selectedSubject.value) {
+    bankList.value = []
+    return
+  }
+  await fetchBankList()
+}
+
 onShow(() => {
   console.log('📱 题库列表页面显示，刷新数据...')
-  fetchBankList()
+  initPage()
 })
 
 // 获取题库列表
 const fetchBankList = async () => {
   loading.value = true
   try {
+    if (!ensureSubjectSelected()) {
+      loading.value = false
+      return
+    }
+    const subjectId = selectedSubject.value?.id
     // 1. 获取题库列表（使用优化后的API，包含study_progress）
-    const response = await get('/questions/banks')
+    const response = await get(`/subjects/${subjectId}/banks`, { page: 1, limit: 20 })
     const banks = response.banks || []
     
     // 映射字段名称并使用study_progress字段
@@ -584,8 +709,10 @@ const selectChapterAndStart = (chapter) => {
 // 跳转到答题页
 const navigateToExam = (mode, chapterId, questionNumber = 1) => {
   const bank = selectedBank.value
+  const subjectId = selectedSubject.value?.id
+  const subjectParam = subjectId ? `&subjectId=${subjectId}` : ''
   uni.navigateTo({
-    url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}`
+    url: `/pages/exam/exam?bankId=${bank.id}&mode=${mode}&chapterId=${chapterId}&questionNumber=${questionNumber}${subjectParam}`
   })
 }
 
@@ -687,6 +814,45 @@ const goToUpload = () => {
   min-height: 100vh;
   background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
   padding-bottom: 40rpx;
+}
+
+.subject-bar {
+  margin: 20rpx;
+  padding: 24rpx 28rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.subject-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.subject-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.subject-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.subject-action {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.subject-action-text {
+  font-size: 24rpx;
+  color: #666;
 }
 
 /* 搜索栏 */

@@ -15,10 +15,10 @@
           <!-- 统计按钮移到左侧，避免与胶囊重叠 -->
         </view>
         <view class="progress-container">
-          <view class="progress-bar">
+          <view v-if="showProgress" class="progress-bar">
             <view class="progress-fill" :style="{ width: progressPercent + '%' }"></view>
           </view>
-          <text class="progress-text">{{ progressPercent }}%</text>
+          <text v-if="showProgress" class="progress-text">{{ progressPercent }}%</text>
           <view class="stats-btn" @click="showStats">
             <uni-icons type="bars" size="18" color="#667eea" />
           </view>
@@ -203,9 +203,15 @@ const navBarHeight = ref(0)
 
 // 页面参数
 const bankId = ref(0)
-const practiceMode = ref('full') // 'chapter' | 'full'
+const practiceMode = ref('full') // 'chapter' | 'full' | 'special' | 'random' | 'real'
 const startChapterId = ref(null)
 const startQuestionNumber = ref(1)
+const subjectId = ref(0)
+const subjectChapterId = ref(0)
+const subjectName = ref('')
+const chapterName = ref('')
+const paperId = ref(0)
+const paperName = ref('')
 
 // 题库信息
 const bankInfo = ref({
@@ -229,6 +235,8 @@ const hasPrevQuestion = ref(true) // 是否有上一题
 const userAnswers = ref({}) // {chapterId_questionNumber: answer}
 const showAnswer = ref(false)
 const questionCache = ref({}) // 题目缓存 {chapterId_questionNumber: question}
+const randomQuestions = ref([])
+const attemptSubmitted = ref(false)
 
 // 加载状态
 const loading = ref(false)
@@ -236,8 +244,23 @@ const loading = ref(false)
 // 弹窗引用
 const statsPopup = ref(null)
 
+const isBankMode = computed(() => practiceMode.value === 'full' || practiceMode.value === 'chapter')
+const isSpecialMode = computed(() => practiceMode.value === 'special')
+const isRandomMode = computed(() => practiceMode.value === 'random')
+const isRealMode = computed(() => practiceMode.value === 'real')
+const showProgress = computed(() => !isRandomMode.value)
+
 // 答案key格式：chapterId_questionNumber
 const getAnswerKey = () => {
+  if (isRandomMode.value) {
+    return `random_${currentQuestionNumber.value}`
+  }
+  if (isRealMode.value) {
+    return `real_${paperId.value}_${currentQuestionNumber.value}`
+  }
+  if (isSpecialMode.value) {
+    return `special_${subjectChapterId.value}_${currentQuestionNumber.value}`
+  }
   if (!currentChapter.value) return ''
   return `${currentChapter.value.id}_${currentQuestionNumber.value}`
 }
@@ -247,16 +270,35 @@ const userAnswer = computed(() => userAnswers.value[getAnswerKey()] || '')
 
 // 标题文本
 const titleText = computed(() => {
+  if (isRealMode.value) {
+    return paperName.value || '真题练习'
+  }
+  if (isRandomMode.value) {
+    return subjectName.value ? `${subjectName.value} 随机练习` : '随机练习'
+  }
+  if (isSpecialMode.value) {
+    return currentChapter.value?.chapter_name || subjectName.value || '专项训练'
+  }
   if (practiceMode.value === 'chapter') {
     return currentChapter.value?.chapter_name || bankInfo.value.bank_name
   }
   return bankInfo.value.bank_name
 })
 
+const totalQuestions = computed(() => {
+  if (isRandomMode.value) {
+    return randomQuestions.value.length
+  }
+  if (isSpecialMode.value || isRealMode.value || practiceMode.value === 'chapter') {
+    return totalInChapter.value
+  }
+  return bankInfo.value.total_questions
+})
+
 // 副标题文本
 const subtitleText = computed(() => {
-  if (practiceMode.value === 'chapter') {
-    return `第 ${currentQuestionNumber.value} / ${totalInChapter.value} 题`
+  if (isSpecialMode.value || isRandomMode.value || isRealMode.value || practiceMode.value === 'chapter') {
+    return `第 ${currentQuestionNumber.value} / ${totalQuestions.value} 题`
   }
 
   // 整卷模式显示总进度
@@ -274,8 +316,13 @@ const subtitleText = computed(() => {
 
 // 进度百分比
 const progressPercent = computed(() => {
-  if (practiceMode.value === 'chapter') {
-    return totalInChapter.value > 0 ? Math.round((currentQuestionNumber.value / totalInChapter.value) * 100) : 0
+  if (isRandomMode.value) {
+    return 0
+  }
+  if (isSpecialMode.value || isRealMode.value || practiceMode.value === 'chapter') {
+    return totalQuestions.value > 0
+      ? Math.round((currentQuestionNumber.value / totalQuestions.value) * 100)
+      : 0
   }
 
   // 整卷模式计算整体进度
@@ -319,25 +366,29 @@ const isAnswerCorrect = computed(() => {
   return userAnswer.value === formatAnswer(currentQuestion.value.answer)
 })
 
+const imageBankId = computed(() => {
+  return currentQuestion.value?.bank_id || bankId.value || 0
+})
+
 // 解析后的题目内容（包含图片）
 const parsedContent = computed(() => {
   if (!currentQuestion.value || !currentQuestion.value.content) return ''
   const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
-  return parseQuestionImages(currentQuestion.value.content, bankId.value, baseUrl)
+  return parseQuestionImages(currentQuestion.value.content, imageBankId.value, baseUrl)
 })
 
 // 解析后的答案解析（包含图片）
 const parsedExplanation = computed(() => {
   if (!currentQuestion.value || !currentQuestion.value.explanation) return ''
   const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
-  return parseQuestionImages(currentQuestion.value.explanation, bankId.value, baseUrl)
+  return parseQuestionImages(currentQuestion.value.explanation, imageBankId.value, baseUrl)
 })
 
 // 获取当前题目所有图片URL（用于预览）
 const currentImageUrls = computed(() => {
   if (!currentQuestion.value) return []
   const baseUrl = API_CONFIG.BASE_URL.replace('/api', '')
-  return extractAllQuestionImages(currentQuestion.value, bankId.value, baseUrl)
+  return extractAllQuestionImages(currentQuestion.value, imageBankId.value, baseUrl)
 })
 
 // 页面加载
@@ -363,13 +414,27 @@ onMounted(async () => {
   const currentPage = pages[pages.length - 1]
   const options = currentPage.options
 
-  bankId.value = parseInt(options.bankId) || 0
   practiceMode.value = options.mode || 'full'
+  bankId.value = parseInt(options.bankId) || 0
+  subjectId.value = parseInt(options.subjectId) || 0
+  subjectChapterId.value = parseInt(options.subjectChapterId || options.chapterId) || 0
+  paperId.value = parseInt(options.paperId) || 0
+  subjectName.value = options.subjectName ? decodeURIComponent(options.subjectName) : ''
+  chapterName.value = options.chapterName ? decodeURIComponent(options.chapterName) : ''
+  paperName.value = options.paperName ? decodeURIComponent(options.paperName) : ''
   startChapterId.value = parseInt(options.chapterId) || null
   startQuestionNumber.value = parseInt(options.questionNumber) || 1
 
-  if (!bankId.value) {
-    uni.showToast({ title: '参数错误', icon: 'none' })
+  const paramError = (() => {
+    if (isBankMode.value && !bankId.value) return '题库参数错误'
+    if (isSpecialMode.value && (!subjectId.value || !subjectChapterId.value)) return '科目章节参数错误'
+    if (isRandomMode.value && !subjectId.value) return '科目参数错误'
+    if (isRealMode.value && !paperId.value) return '试卷参数错误'
+    return ''
+  })()
+
+  if (paramError) {
+    uni.showToast({ title: paramError, icon: 'none' })
     setTimeout(() => {
       uni.navigateBack()
     }, 1500)
@@ -380,20 +445,30 @@ onMounted(async () => {
 
   // 监听小程序隐藏事件
   uni.onAppHide(() => {
-    saveProgress()
+    saveCurrentProgress()
   })
 })
 
+const saveCurrentProgress = async () => {
+  if (isBankMode.value) {
+    await saveProgress()
+    return
+  }
+  if (isSpecialMode.value) {
+    await saveSpecialProgress()
+  }
+}
+
 // 页面卸载时保存进度
 onUnmounted(() => {
-  saveProgress()
+  saveCurrentProgress()
 })
 
 // 监听题号和章节变化，自动保存进度
 watch([currentQuestionNumber, currentChapterIndex], ([newQuestionNum, newChapterIdx], [oldQuestionNum, oldChapterIdx]) => {
   if ((oldQuestionNum !== undefined && newQuestionNum !== oldQuestionNum) ||
     (oldChapterIdx !== undefined && newChapterIdx !== oldChapterIdx)) {
-    saveProgress()
+    saveCurrentProgress()
   }
 })
 
@@ -401,6 +476,19 @@ watch([currentQuestionNumber, currentChapterIndex], ([newQuestionNum, newChapter
 const initExam = async () => {
   loading.value = true
   try {
+    if (isRandomMode.value) {
+      await initRandomExam()
+      return
+    }
+    if (isSpecialMode.value) {
+      await initSpecialExam()
+      return
+    }
+    if (isRealMode.value) {
+      await initRealExam()
+      return
+    }
+
     console.log('📖 开始初始化考试，参数:', {
       bankId: bankId.value,
       mode: practiceMode.value,
@@ -463,8 +551,88 @@ const initExam = async () => {
   }
 }
 
+const initSpecialExam = async () => {
+  console.log('📘 初始化专项训练', {
+    subjectId: subjectId.value,
+    subjectChapterId: subjectChapterId.value
+  })
+
+  chapters.value = []
+  currentChapterIndex.value = 0
+  currentChapter.value = {
+    id: subjectChapterId.value,
+    chapter_name: chapterName.value || subjectName.value || '专项训练'
+  }
+
+  bankInfo.value = {
+    bank_name: currentChapter.value.chapter_name,
+    total_questions: 0
+  }
+
+  currentQuestionNumber.value = startQuestionNumber.value
+  await loadQuestion()
+}
+
+const initRandomExam = async () => {
+  console.log('📘 初始化随机练习', { subjectId: subjectId.value })
+
+  chapters.value = []
+  currentChapterIndex.value = 0
+  currentChapter.value = null
+  randomQuestions.value = []
+
+  const response = await get(
+    `/subjects/${subjectId.value}/random`,
+    { count: 10 },
+    { showLoading: false }
+  )
+
+  randomQuestions.value = response.questions || []
+  totalInChapter.value = randomQuestions.value.length
+  bankInfo.value = {
+    bank_name: subjectName.value || '随机练习',
+    total_questions: totalInChapter.value
+  }
+
+  if (!randomQuestions.value.length) {
+    uni.showToast({ title: '暂无可用题目', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 1500)
+    return
+  }
+
+  currentQuestionNumber.value = Math.min(startQuestionNumber.value, totalInChapter.value || 1)
+  await loadQuestion()
+}
+
+const initRealExam = async () => {
+  console.log('📘 初始化真题练习', { paperId: paperId.value })
+
+  chapters.value = []
+  currentChapterIndex.value = 0
+  currentChapter.value = null
+  bankInfo.value = {
+    bank_name: paperName.value || '真题练习',
+    total_questions: 0
+  }
+
+  currentQuestionNumber.value = startQuestionNumber.value
+  await loadQuestion()
+}
+
 // 加载题目（单题模式）
 const loadQuestion = async () => {
+  if (isRandomMode.value) {
+    await loadRandomQuestion()
+    return
+  }
+  if (isSpecialMode.value) {
+    await loadSpecialQuestion()
+    return
+  }
+  if (isRealMode.value) {
+    await loadRealQuestion()
+    return
+  }
   if (!currentChapter.value) {
     console.error('❌ currentChapter is null')
     return
@@ -529,13 +697,99 @@ const loadQuestion = async () => {
   }
 }
 
+const loadSpecialQuestion = async () => {
+  loading.value = true
+  try {
+    const response = await get(
+      `/subjects/${subjectId.value}/chapters/${subjectChapterId.value}/questions`,
+      { questionNumber: currentQuestionNumber.value },
+      { showLoading: false }
+    )
+
+    if (response && response.question) {
+      currentQuestion.value = response.question
+      totalInChapter.value = response.total || 0
+      hasNextQuestion.value = response.hasNext || false
+      hasPrevQuestion.value = response.hasPrev || false
+
+      const cacheKey = getAnswerKey()
+      questionCache.value[cacheKey] = response.question
+      showAnswer.value = false
+    } else {
+      uni.showToast({ title: '已是最后一题', icon: 'none' })
+    }
+  } catch (error) {
+    console.error('❌ 加载专项题目失败:', error)
+    uni.showToast({
+      title: error.message || '加载失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadRandomQuestion = async () => {
+  totalInChapter.value = randomQuestions.value.length
+  const index = currentQuestionNumber.value - 1
+  const question = randomQuestions.value[index]
+
+  if (!question) {
+    uni.showToast({ title: '已是最后一题', icon: 'none' })
+    return
+  }
+
+  currentQuestion.value = question
+  hasNextQuestion.value = index < randomQuestions.value.length - 1
+  hasPrevQuestion.value = index > 0
+
+  const cacheKey = getAnswerKey()
+  questionCache.value[cacheKey] = question
+  showAnswer.value = false
+}
+
+const loadRealQuestion = async () => {
+  loading.value = true
+  try {
+    const response = await get(
+      `/real-exams/${paperId.value}/questions`,
+      { questionNumber: currentQuestionNumber.value },
+      { showLoading: false }
+    )
+
+    if (response && response.question) {
+      currentQuestion.value = response.question
+      totalInChapter.value = response.total || 0
+      bankInfo.value.total_questions = response.total || 0
+      hasNextQuestion.value = response.hasNext || false
+      hasPrevQuestion.value = response.hasPrev || false
+
+      const cacheKey = getAnswerKey()
+      questionCache.value[cacheKey] = response.question
+      showAnswer.value = false
+    } else {
+      uni.showToast({ title: '已是最后一题', icon: 'none' })
+    }
+  } catch (error) {
+    console.error('❌ 加载真题失败:', error)
+    uni.showToast({
+      title: error.message || '加载失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
 // 检查是否可以切换到下一章节
 const canSwitchToNextChapter = () => {
+  if (!isBankMode.value) return false
   return currentChapterIndex.value < chapters.value.length - 1
 }
 
 // 检查是否可以切换到上一章节
 const canSwitchToPrevChapter = () => {
+  if (!isBankMode.value) return false
   return currentChapterIndex.value > 0
 }
 
@@ -720,7 +974,8 @@ const nextQuestion = async () => {
 
 // 跳转到指定题目（简化版，仅用于统计弹窗）
 const jumpToQuestion = async (questionNumber) => {
-  if (questionNumber >= 1 && questionNumber <= totalInChapter.value) {
+  const maxQuestions = practiceMode.value === 'full' ? totalInChapter.value : totalQuestions.value
+  if (questionNumber >= 1 && questionNumber <= maxQuestions) {
     currentQuestionNumber.value = questionNumber
     await loadQuestion()
     closeStats()
@@ -750,6 +1005,7 @@ const closeStats = () => {
 
 // 保存学习进度
 const saveProgress = async () => {
+  if (!isBankMode.value) return
   if (!bankId.value || !currentChapter.value) return
 
   try {
@@ -818,6 +1074,23 @@ const resetProgress = async () => {
         try {
           uni.showLoading({ title: '重置中...' })
 
+          if (!isBankMode.value) {
+            currentQuestionNumber.value = 1
+            userAnswers.value = {}
+            showAnswer.value = false
+            questionCache.value = {}
+            attemptSubmitted.value = false
+
+            await loadQuestion()
+
+            uni.hideLoading()
+            uni.showToast({
+              title: '已重新开始',
+              icon: 'success'
+            })
+            return
+          }
+
           // 删除当前章节进度
           if (practiceMode.value === 'chapter') {
             // 章节练习：只删除当前章节
@@ -856,16 +1129,100 @@ const resetProgress = async () => {
   })
 }
 
-// 完成考试
-const finishExam = () => {
-  // 保存最终进度
-  saveProgress()
+const saveSpecialProgress = async () => {
+  if (!isSpecialMode.value || !subjectId.value || !subjectChapterId.value) return
+  if (totalQuestions.value <= 0) return
+  try {
+    await post(
+      `/subjects/${subjectId.value}/chapters/${subjectChapterId.value}/progress`,
+      {
+        current_question_number: currentQuestionNumber.value,
+        completed_count: currentQuestionNumber.value,
+        total_questions: totalQuestions.value
+      },
+      { showLoading: false }
+    )
+  } catch (error) {
+    console.error('❌ 保存专项进度失败:', error)
+  }
+}
 
-  const totalQuestions = practiceMode.value === 'chapter' ? totalInChapter.value : bankInfo.value.total_questions
+const buildWrongQuestions = () => {
+  return Object.keys(userAnswers.value)
+    .map((key) => {
+      const userAns = userAnswers.value[key]
+      if (checkAnswerByKey(key, userAns)) return null
+      const cachedQuestion = questionCache.value[key]
+      if (!cachedQuestion) return null
+      return {
+        question_id: cachedQuestion.id,
+        selected_answer: userAns || null,
+        correct_answer: formatAnswer(cachedQuestion.answer) || null
+      }
+    })
+    .filter(Boolean)
+}
+
+const submitRealAttempt = async () => {
+  if (!isRealMode.value || attemptSubmitted.value) return
+  try {
+    const payload = {
+      total_questions: totalQuestions.value,
+      correct_count: correctCount.value,
+      wrong_count: wrongCount.value,
+      accuracy: accuracy.value,
+      wrong_questions: buildWrongQuestions()
+    }
+    await post(`/real-exams/${paperId.value}/attempts`, payload, { showLoading: false })
+    attemptSubmitted.value = true
+  } catch (error) {
+    console.error('❌ 提交真题结果失败:', error)
+    uni.showToast({
+      title: error.message || '提交失败',
+      icon: 'none'
+    })
+  }
+}
+
+const goToWrongQuestions = () => {
+  uni.navigateTo({
+    url: `/pages/real-exam-wrong/real-exam-wrong?paperId=${paperId.value}&paperName=${encodeURIComponent(paperName.value)}`
+  })
+}
+
+// 完成考试
+const finishExam = async () => {
+  // 保存最终进度
+  if (isBankMode.value) {
+    saveProgress()
+  }
+  if (isSpecialMode.value) {
+    saveSpecialProgress()
+  }
+
+  const content = `已完成 ${answeredCount.value}/${totalQuestions.value} 题\n正确率：${accuracy.value}%`
+
+  if (isRealMode.value) {
+    await submitRealAttempt()
+    uni.showModal({
+      title: '完成练习',
+      content,
+      confirmText: '查看错题',
+      cancelText: '返回',
+      success: (res) => {
+        if (res.confirm) {
+          goToWrongQuestions()
+        } else {
+          uni.navigateBack()
+        }
+      }
+    })
+    return
+  }
 
   uni.showModal({
     title: '完成练习',
-    content: `已完成 ${answeredCount.value}/${totalQuestions} 题\n正确率：${accuracy.value}%`,
+    content,
     confirmText: '查看统计',
     cancelText: '返回',
     success: (res) => {

@@ -22,6 +22,20 @@
       </view>
     </view>
 
+    <!-- 科目选择 -->
+    <view class="subject-section">
+      <view class="subject-card" @click="openSubjectPicker">
+        <view class="subject-info">
+          <text class="subject-label">当前科目</text>
+          <text class="subject-name">{{ selectedSubject?.name || '请选择科目' }}</text>
+        </view>
+        <view class="subject-action">
+          <text class="subject-action-text">{{ subjects.length ? '切换' : '加载中' }}</text>
+          <uni-icons type="arrowdown" size="16" color="#999" />
+        </view>
+      </view>
+    </view>
+
     <!-- 练习模式 -->
     <view class="practice-modes">
       <uni-section title="练习模式" type="line" padding>
@@ -96,11 +110,15 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import CustomTabBar from "@/components/CustomTabBar.vue"
+import { get } from '@/utils/request.js'
+import { SubjectStorage, normalizeSubject } from '@/utils/subject.js'
 
 // 练习模式数据
 const practiceModes = reactive([
   {
+    key: 'real',
     name: '真题练习',
     description: '历年考试真题，贴近实际考试',
     icon: 'fire',
@@ -108,6 +126,7 @@ const practiceModes = reactive([
     count: 1200
   },
   {
+    key: 'mock',
     name: '模拟考试',
     description: '完整模拟考试，检验学习成果',
     icon: 'calendar',
@@ -115,6 +134,7 @@ const practiceModes = reactive([
     count: 150
   },
   {
+    key: 'special',
     name: '专项训练',
     description: '针对性练习，突破薄弱环节',
     icon: 'gear',
@@ -122,6 +142,7 @@ const practiceModes = reactive([
     count: 800
   },
   {
+    key: 'random',
     name: '随机练习',
     description: '随机抽取题目，全面复习',
     icon: 'loop',
@@ -129,6 +150,86 @@ const practiceModes = reactive([
     count: 500
   }
 ])
+
+const subjects = ref([])
+const selectedSubject = ref(SubjectStorage.get())
+const loadingSubjects = ref(false)
+
+const syncSelectedSubject = (subject) => {
+  selectedSubject.value = subject
+  SubjectStorage.set(subject)
+}
+
+const fetchSubjects = async () => {
+  if (loadingSubjects.value) return
+  loadingSubjects.value = true
+  try {
+    const data = await get('/subjects')
+    const list = (data.subjects || []).map(normalizeSubject)
+    subjects.value = list
+
+    if (!selectedSubject.value && list.length) {
+      syncSelectedSubject(list[0])
+      return
+    }
+
+    if (selectedSubject.value) {
+      const matched = list.find(item => item.id === selectedSubject.value.id)
+      if (matched) {
+        syncSelectedSubject(matched)
+      } else if (list.length) {
+        syncSelectedSubject(list[0])
+      }
+    }
+  } catch (error) {
+    console.error('获取科目失败:', error)
+    uni.showToast({
+      title: error.message || '获取科目失败',
+      icon: 'none'
+    })
+  } finally {
+    loadingSubjects.value = false
+  }
+}
+
+const openSubjectPicker = () => {
+  if (loadingSubjects.value) return
+  if (!subjects.value.length) {
+    uni.showToast({
+      title: '暂无可选科目',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.showActionSheet({
+    itemList: subjects.value.map(item => item.name),
+    success: (res) => {
+      const subject = subjects.value[res.tapIndex]
+      if (subject) {
+        syncSelectedSubject(subject)
+      }
+    }
+  })
+}
+
+const ensureSubjectSelected = () => {
+  if (selectedSubject.value) return true
+  uni.showToast({
+    title: '请先选择科目',
+    icon: 'none'
+  })
+  openSubjectPicker()
+  return false
+}
+
+onShow(() => {
+  const stored = SubjectStorage.get()
+  if (stored) {
+    selectedSubject.value = stored
+  }
+  fetchSubjects()
+})
 
 // 错题数据
 const wrongQuestions = reactive([
@@ -167,19 +268,38 @@ const fabContent = reactive([
 
 // 开始练习
 const startPractice = (mode) => {
-  // 如果是模拟考试，跳转到题库列表页面
-  if (mode.name === '模拟考试') {
-    uni.navigateTo({
-      url: '/pages/exam-list/exam-list'
-    })
-    return
+  if (!ensureSubjectSelected()) return
+
+  const subjectId = selectedSubject.value?.id
+  const subjectName = selectedSubject.value?.name || ''
+
+  switch (mode.key) {
+    case 'mock':
+      uni.navigateTo({
+        url: `/pages/exam-list/exam-list?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`
+      })
+      return
+    case 'real':
+      uni.navigateTo({
+        url: `/pages/real-exam-list/real-exam-list?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`
+      })
+      return
+    case 'special':
+      uni.navigateTo({
+        url: `/pages/special-list/special-list?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`
+      })
+      return
+    case 'random':
+      uni.navigateTo({
+        url: `/pages/exam/exam?mode=random&subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`
+      })
+      return
+    default:
+      uni.showToast({
+        title: `开始${mode.name}`,
+        icon: 'none'
+      })
   }
-  
-  uni.showToast({
-    title: `开始${mode.name}`,
-    icon: 'none'
-  })
-  // 这里后续跳转到答题页面
 }
 
 // 复习错题
@@ -210,6 +330,8 @@ const clearWrongQuestions = () => {
 
 // 浮动按钮点击
 const fabClick = (e) => {
+  if (!ensureSubjectSelected()) return
+
   // 开始快速练习
   uni.showToast({
     title: '开始快速练习',
@@ -259,6 +381,48 @@ const onTabChange = (index) => {
 .stats-grid {
   display: flex;
   justify-content: space-around;
+}
+
+.subject-section {
+  margin: 0 20rpx 20rpx;
+}
+
+.subject-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.subject-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.subject-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.subject-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.subject-action {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.subject-action-text {
+  font-size: 24rpx;
+  color: #666;
 }
 
 .stat-item {
