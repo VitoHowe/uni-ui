@@ -35,6 +35,12 @@
 			}
 		},
 		{
+			"path": "pages/wrong-set/wrong-set",
+			"style": {
+				"navigationBarTitleText": "错题集"
+			}
+		},
+		{
 			"path": "pages/profile/profile",
 			"style": {
 				"navigationBarTitleText": "我的"

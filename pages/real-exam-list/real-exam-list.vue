@@ -11,9 +11,24 @@
       </view>
     </view>
 
+    <view class="practice-stats">
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.answered_count }}</text>
+        <text class="stat-label">已作答</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.accuracy }}%</text>
+        <text class="stat-label">正确率</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.wrong_count }}</text>
+        <text class="stat-label">错题数</text>
+      </view>
+    </view>
+
     <view class="paper-list">
       <view v-if="loading" class="loading-state">
-        <uni-icons type="spinner-cycle" size="40" color="#007AFF" class="loading-icon" />
+        <uni-icons type="spinner-cycle" size="40" color="#3B82F6" class="loading-icon" />
         <text class="loading-text">正在加载试卷...</text>
       </view>
 
@@ -51,6 +66,12 @@ const loading = ref(false)
 const subjects = ref([])
 const selectedSubject = ref(SubjectStorage.get())
 const loadingSubjects = ref(false)
+const practiceStats = ref({
+  answered_count: 0,
+  correct_count: 0,
+  wrong_count: 0,
+  accuracy: 0
+})
 
 const syncSelectedSubject = (subject) => {
   selectedSubject.value = subject
@@ -112,6 +133,38 @@ const fetchSubjects = async () => {
   }
 }
 
+const resetPracticeStats = () => {
+  practiceStats.value = {
+    answered_count: 0,
+    correct_count: 0,
+    wrong_count: 0,
+    accuracy: 0
+  }
+}
+
+const fetchPracticeSummary = async () => {
+  if (!ensureSubjectSelected()) {
+    resetPracticeStats()
+    return
+  }
+  try {
+    const response = await get(
+      '/practice/summary',
+      { subjectId: selectedSubject.value.id, mode: 'real' },
+      { showLoading: false }
+    )
+    practiceStats.value = response.stats || {
+      answered_count: 0,
+      correct_count: 0,
+      wrong_count: 0,
+      accuracy: 0
+    }
+  } catch (error) {
+    console.error('获取练习统计失败:', error)
+    resetPracticeStats()
+  }
+}
+
 const fetchPapers = async () => {
   if (!ensureSubjectSelected()) {
     papers.value = []
@@ -151,6 +204,7 @@ const openSubjectPicker = () => {
       const subject = subjects.value[res.tapIndex]
       if (subject) {
         syncSelectedSubject(subject)
+        await fetchPracticeSummary()
         await fetchPapers()
       }
     }
@@ -178,26 +232,72 @@ onShow(async () => {
     selectedSubject.value = stored
   }
   await fetchSubjects()
+  await fetchPracticeSummary()
   await fetchPapers()
 })
 </script>
 
 <style lang="scss" scoped>
 .real-exam-list {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.08);
+  --shadow: 0 18rpx 32rpx rgba(15, 23, 42, 0.12);
   padding: 20rpx;
-  background: #f8f9fa;
+  background: radial-gradient(120% 120% at 12% 0%, #eff6ff 0%, transparent 55%),
+    radial-gradient(120% 120% at 100% 12%, #fff7ed 0%, transparent 45%),
+    var(--bg);
   min-height: 100vh;
+  font-family: 'Poppins', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
 }
 
 .subject-bar {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
+  background: var(--card);
+  border-radius: 20rpx;
+  padding: 26rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
   margin-bottom: 20rpx;
+}
+
+.practice-stats {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.stat-card {
+  flex: 1;
+  background: var(--card);
+  border-radius: 18rpx;
+  padding: 20rpx 12rpx;
+  text-align: center;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.stat-number {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
 }
 
 .subject-info {
@@ -208,13 +308,13 @@ onShow(async () => {
 
 .subject-label {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .subject-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .subject-action {
@@ -225,7 +325,8 @@ onShow(async () => {
 
 .subject-action-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .paper-list {
@@ -253,11 +354,12 @@ onShow(async () => {
 }
 
 .paper-card {
-  background: #fff;
-  border-radius: 16rpx;
+  background: var(--card);
+  border-radius: 18rpx;
   padding: 24rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .card-header {
@@ -269,19 +371,20 @@ onShow(async () => {
 .paper-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .paper-count {
   font-size: 24rpx;
-  color: #007AFF;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .paper-desc {
   display: block;
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 .card-footer {
@@ -293,14 +396,15 @@ onShow(async () => {
 
 .paper-date {
   font-size: 22rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .start-btn {
-  background: #007AFF;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: #fff;
   padding: 12rpx 22rpx;
   border-radius: 999rpx;
   font-size: 24rpx;
+  box-shadow: 0 6rpx 16rpx rgba(59, 130, 246, 0.25);
 }
 </style>

@@ -34,6 +34,22 @@
       </view>
     </view>
 
+    <!-- 练习统计 -->
+    <view class="practice-stats">
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.answered_count }}</text>
+        <text class="stat-label">已作答</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.accuracy }}%</text>
+        <text class="stat-label">正确率</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{ practiceStats.wrong_count }}</text>
+        <text class="stat-label">错题数</text>
+      </view>
+    </view>
+
     <!-- 数据统计卡片 -->
     <view class="stats-overview">
       <view class="stat-card">
@@ -54,7 +70,7 @@
     <view class="bank-list">
       <!-- 加载状态 -->
       <view v-if="loading" class="loading-state">
-        <uni-icons type="spinner-cycle" size="40" color="#007AFF" class="loading-icon" />
+        <uni-icons type="spinner-cycle" size="40" color="#3B82F6" class="loading-icon" />
         <text class="loading-text">正在加载题库...</text>
       </view>
 
@@ -269,6 +285,12 @@ const bankList = ref([])
 const subjects = ref([])
 const selectedSubject = ref(SubjectStorage.get())
 const loadingSubjects = ref(false)
+const practiceStats = ref({
+  answered_count: 0,
+  correct_count: 0,
+  wrong_count: 0,
+  accuracy: 0
+})
 
 // 当前选中的题库
 const selectedBank = ref(null)
@@ -348,6 +370,38 @@ const fetchSubjects = async () => {
   }
 }
 
+const resetPracticeStats = () => {
+  practiceStats.value = {
+    answered_count: 0,
+    correct_count: 0,
+    wrong_count: 0,
+    accuracy: 0
+  }
+}
+
+const fetchPracticeSummary = async () => {
+  if (!ensureSubjectSelected()) {
+    resetPracticeStats()
+    return
+  }
+  try {
+    const response = await get(
+      '/practice/summary',
+      { subjectId: selectedSubject.value.id, mode: 'mock' },
+      { showLoading: false }
+    )
+    practiceStats.value = response.stats || {
+      answered_count: 0,
+      correct_count: 0,
+      wrong_count: 0,
+      accuracy: 0
+    }
+  } catch (error) {
+    console.error('获取练习统计失败:', error)
+    resetPracticeStats()
+  }
+}
+
 const openSubjectPicker = () => {
   if (loadingSubjects.value) return
   if (!subjects.value.length) {
@@ -364,6 +418,7 @@ const openSubjectPicker = () => {
       const subject = subjects.value[res.tapIndex]
       if (subject) {
         syncSelectedSubject(subject)
+        await fetchPracticeSummary()
         await fetchBankList()
       }
     }
@@ -437,6 +492,7 @@ const initPage = async () => {
     bankList.value = []
     return
   }
+  await fetchPracticeSummary()
   await fetchBankList()
 }
 
@@ -811,20 +867,36 @@ const goToUpload = () => {
 
 <style lang="scss" scoped>
 .exam-list-container {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --success: #22c55e;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.06);
+  --shadow: 0 18rpx 34rpx rgba(15, 23, 42, 0.12);
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
+  background: radial-gradient(120% 120% at 10% 0%, #eff6ff 0%, transparent 55%),
+    radial-gradient(120% 120% at 100% 10%, #fff7ed 0%, transparent 50%),
+    var(--bg);
   padding-bottom: 40rpx;
+  font-family: 'Poppins', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
 }
 
 .subject-bar {
   margin: 20rpx;
-  padding: 24rpx 28rpx;
-  background: #fff;
-  border-radius: 16rpx;
+  padding: 26rpx 30rpx;
+  background: var(--card);
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .subject-info {
@@ -835,13 +907,13 @@ const goToUpload = () => {
 
 .subject-label {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .subject-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .subject-action {
@@ -852,15 +924,16 @@ const goToUpload = () => {
 
 .subject-action-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 /* 搜索栏 */
 .search-section {
   display: flex;
   align-items: center;
-  padding: 20rpx;
-  background: white;
+  padding: 0 20rpx 20rpx;
+  background: transparent;
   gap: 16rpx;
 }
 
@@ -868,26 +941,53 @@ const goToUpload = () => {
   flex: 1;
   display: flex;
   align-items: center;
-  background: #f5f7fa;
-  border-radius: 50rpx;
+  background: var(--card);
+  border-radius: 999rpx;
   padding: 16rpx 24rpx;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
   gap: 12rpx;
 }
 
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  color: #333;
+  color: var(--text);
 }
 
 .filter-btn {
   width: 72rpx;
   height: 72rpx;
-  background: #f5f7fa;
+  background: var(--card);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* 练习统计 */
+.practice-stats {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 20rpx 10rpx;
+}
+
+.practice-stats .stat-card {
+  background: var(--card);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+  padding: 22rpx 12rpx;
+}
+
+.practice-stats .stat-number {
+  font-size: 34rpx;
+  color: var(--text);
+}
+
+.practice-stats .stat-label {
+  color: var(--muted);
 }
 
 /* 统计卡片 */
@@ -899,21 +999,21 @@ const goToUpload = () => {
 
 .stat-card {
   flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
   padding: 32rpx 20rpx;
   border-radius: 16rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.25);
+  box-shadow: 0 10rpx 24rpx rgba(59, 130, 246, 0.25);
 }
 
 .stat-card:nth-child(2) {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
 }
 
 .stat-card:nth-child(3) {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #86efac 100%);
 }
 
 .stat-number {
@@ -982,7 +1082,7 @@ const goToUpload = () => {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
   border: none;
   padding: 24rpx 48rpx;
@@ -998,10 +1098,11 @@ const goToUpload = () => {
 }
 
 .bank-card {
-  background: white;
+  background: var(--card);
   border-radius: 20rpx;
   padding: 32rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -1021,7 +1122,7 @@ const goToUpload = () => {
 .bank-icon {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   border-radius: 16rpx;
   display: flex;
   align-items: center;
@@ -1039,12 +1140,12 @@ const goToUpload = () => {
 .bank-name {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .file-name {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .more-btn {
@@ -1066,7 +1167,7 @@ const goToUpload = () => {
 
 .item-text {
   font-size: 26rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 /* 标签 */
@@ -1101,7 +1202,7 @@ const goToUpload = () => {
 
 .tag-text {
   font-size: 22rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 /* 学习进度区域 */
@@ -1120,13 +1221,13 @@ const goToUpload = () => {
 
 .progress-label {
   font-size: 26rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 .progress-value {
   font-size: 28rpx;
   font-weight: 600;
-  color: #667eea;
+  color: var(--primary-strong);
 }
 
 .progress-bar-wrapper {
@@ -1138,14 +1239,14 @@ const goToUpload = () => {
 .progress-bar-bg {
   flex: 1;
   height: 12rpx;
-  background: #f0f0f0;
+  background: #e2e8f0;
   border-radius: 6rpx;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-strong) 100%);
   border-radius: 6rpx;
   transition: width 0.3s ease;
   min-width: 2%;
@@ -1165,7 +1266,7 @@ const goToUpload = () => {
 
 .completed-text {
   font-size: 22rpx;
-  color: #28a745;
+  color: var(--success);
 }
 
 /* 卡片底部 */
@@ -1187,7 +1288,7 @@ const goToUpload = () => {
 }
 
 .footer-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   border: none;
 }
 
@@ -1219,7 +1320,7 @@ const goToUpload = () => {
 
 .filter-reset {
   font-size: 28rpx;
-  color: #007AFF;
+  color: var(--primary);
 }
 
 .filter-section {
@@ -1249,7 +1350,7 @@ const goToUpload = () => {
 }
 
 .option-item.active {
-  background: #e3f2fd;
+  background: #dbeafe;
 }
 
 .option-text {
@@ -1259,7 +1360,7 @@ const goToUpload = () => {
 
 .confirm-btn {
   width: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
   border: none;
   padding: 28rpx;
@@ -1323,15 +1424,15 @@ const goToUpload = () => {
   flex-direction: column;
   align-items: center;
   padding: 40rpx 32rpx;
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
   border-radius: 16rpx;
-  border: 2rpx solid #e0e0e0;
+  border: 2rpx solid var(--border);
   transition: all 0.3s ease;
 }
 
 .mode-card:active {
   transform: scale(0.98);
-  border-color: #667eea;
+  border-color: var(--primary);
 }
 
 .mode-title {

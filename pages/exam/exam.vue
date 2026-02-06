@@ -20,8 +20,26 @@
           </view>
           <text v-if="showProgress" class="progress-text">{{ progressPercent }}%</text>
           <view class="stats-btn" @click="showStats">
-            <uni-icons type="bars" size="18" color="#667eea" />
+            <uni-icons type="bars" size="18" color="#3B82F6" />
           </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 随机练习历史统计 -->
+    <view v-if="showPracticeSummary" class="practice-summary">
+      <view class="summary-card">
+        <view class="summary-item">
+          <text class="summary-number">{{ practiceSummary.answered_count }}</text>
+          <text class="summary-label">已作答</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-number">{{ practiceSummary.accuracy }}%</text>
+          <text class="summary-label">正确率</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-number">{{ practiceSummary.wrong_count }}</text>
+          <text class="summary-label">错题数</text>
         </view>
       </view>
     </view>
@@ -177,7 +195,7 @@
           </view>
 
           <view class="stats-note">
-            <text class="note-text">💡 统计数据基于本次会话答题情况</text>
+            <text class="note-text">提示：统计数据基于本次会话答题情况</text>
           </view>
         </view>
 
@@ -237,6 +255,12 @@ const showAnswer = ref(false)
 const questionCache = ref({}) // 题目缓存 {chapterId_questionNumber: question}
 const randomQuestions = ref([])
 const attemptSubmitted = ref(false)
+const practiceSummary = ref({
+  answered_count: 0,
+  correct_count: 0,
+  wrong_count: 0,
+  accuracy: 0
+})
 
 // 加载状态
 const loading = ref(false)
@@ -249,6 +273,7 @@ const isSpecialMode = computed(() => practiceMode.value === 'special')
 const isRandomMode = computed(() => practiceMode.value === 'random')
 const isRealMode = computed(() => practiceMode.value === 'real')
 const showProgress = computed(() => !isRandomMode.value)
+const showPracticeSummary = computed(() => isRandomMode.value)
 
 // 答案key格式：chapterId_questionNumber
 const getAnswerKey = () => {
@@ -593,6 +618,8 @@ const initRandomExam = async () => {
     bank_name: subjectName.value || '随机练习',
     total_questions: totalInChapter.value
   }
+
+  await fetchPracticeSummary()
 
   if (!randomQuestions.value.length) {
     uni.showToast({ title: '暂无可用题目', icon: 'none' })
@@ -1105,6 +1132,7 @@ const resetProgress = async () => {
           userAnswers.value = {}
           showAnswer.value = false
           questionCache.value = {}
+          attemptSubmitted.value = false
 
           // 重新加载第一题
           await loadQuestion()
@@ -1161,6 +1189,84 @@ const buildWrongQuestions = () => {
       }
     })
     .filter(Boolean)
+}
+
+const buildAttemptQuestionIds = () => {
+  const ids = Object.keys(userAnswers.value)
+    .map((key) => questionCache.value[key]?.id)
+    .filter((id) => Number.isFinite(id))
+  return Array.from(new Set(ids))
+}
+
+const getPracticeAttemptMode = () => {
+  if (isRandomMode.value) return 'random'
+  if (isSpecialMode.value) return 'special'
+  if (isBankMode.value) return 'mock'
+  return 'mock'
+}
+
+const getPracticeSourceType = () => {
+  if (isRandomMode.value) return 'subject'
+  if (isSpecialMode.value) return 'subject_chapter'
+  if (practiceMode.value === 'chapter') return 'chapter'
+  return 'bank'
+}
+
+const getPracticeSourceId = () => {
+  if (isRandomMode.value) return subjectId.value
+  if (isSpecialMode.value) return subjectChapterId.value
+  if (practiceMode.value === 'chapter') return currentChapter.value?.id || 0
+  return bankId.value
+}
+
+const fetchPracticeSummary = async () => {
+  if (!isRandomMode.value || !subjectId.value) return
+  try {
+    const response = await get(
+      '/practice/summary',
+      { subjectId: subjectId.value, mode: 'random' },
+      { showLoading: false }
+    )
+    practiceSummary.value = response.stats || {
+      answered_count: 0,
+      correct_count: 0,
+      wrong_count: 0,
+      accuracy: 0
+    }
+  } catch (error) {
+    console.error('❌ 获取随机练习统计失败:', error)
+  }
+}
+
+const submitPracticeAttempt = async () => {
+  if (isRealMode.value || attemptSubmitted.value) return
+  if (!subjectId.value) return
+
+  const sourceId = getPracticeSourceId()
+  if (!sourceId) return
+
+  const questionIds = buildAttemptQuestionIds()
+  if (!questionIds.length) return
+
+  try {
+    const payload = {
+      subject_id: subjectId.value,
+      mode: getPracticeAttemptMode(),
+      source_type: getPracticeSourceType(),
+      source_id: sourceId,
+      total_questions: totalQuestions.value,
+      correct_count: correctCount.value,
+      wrong_count: wrongCount.value,
+      accuracy: accuracy.value,
+      question_source: 'question_bank',
+      question_ids: questionIds,
+      wrong_questions: buildWrongQuestions()
+    }
+    await post('/practice/attempts', payload, { showLoading: false })
+    attemptSubmitted.value = true
+  } catch (error) {
+    console.error('❌ 提交练习统计失败:', error)
+  }
 }
 
 const submitRealAttempt = async () => {
@@ -1220,6 +1326,8 @@ const finishExam = async () => {
     return
   }
 
+  await submitPracticeAttempt()
+
   uni.showModal({
     title: '完成练习',
     content,
@@ -1263,16 +1371,65 @@ const handleImageClick = () => {
 
 <style lang="scss" scoped>
 .exam-container {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.06);
+  --shadow: 0 16rpx 30rpx rgba(15, 23, 42, 0.12);
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #f5f7fa 0%, #ffffff 100%);
+  background: radial-gradient(120% 120% at 20% 0%, #eff6ff 0%, transparent 55%),
+    radial-gradient(120% 120% at 100% 20%, #fff7ed 0%, transparent 45%),
+    var(--bg);
+  font-family: 'Poppins', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
+}
+
+.practice-summary {
+  margin: 16rpx 20rpx 0;
+}
+
+.summary-card {
+  background: var(--card);
+  border-radius: 18rpx;
+  padding: 22rpx 24rpx;
+  display: flex;
+  justify-content: space-between;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.summary-item {
+  flex: 1;
+  text-align: center;
+}
+
+.summary-number {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.summary-label {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
 }
 
 /* 顶部进度栏 */
 .exam-header {
-  background: white;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  background: var(--card);
+  box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.08);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -1280,6 +1437,7 @@ const handleImageClick = () => {
   flex-direction: column;
   justify-content: flex-end;
   padding-bottom: 20rpx;
+  border-bottom: 1rpx solid var(--border);
 }
 
 .header-content {
@@ -1303,7 +1461,7 @@ const handleImageClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: #e0e7ff;
   border-radius: 50%;
 }
 
@@ -1314,7 +1472,7 @@ const handleImageClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f3ff;
+  background: #dbeafe;
   border-radius: 50%;
   margin-left: 16rpx;
 }
@@ -1333,12 +1491,12 @@ const handleImageClick = () => {
 .title-text {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .subtitle-text {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .progress-container {
@@ -1358,20 +1516,20 @@ const handleImageClick = () => {
 .progress-bar {
   flex: 1;
   height: 8rpx;
-  background: #f0f0f0;
+  background: #e2e8f0;
   border-radius: 4rpx;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-strong) 100%);
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 24rpx;
-  color: #667eea;
+  color: var(--primary);
   font-weight: 600;
   min-width: 60rpx;
   text-align: right;
@@ -1442,11 +1600,12 @@ const handleImageClick = () => {
 
 /* 题目卡片 */
 .question-card {
-  background: white;
+  background: var(--card);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
   box-sizing: border-box;
   width: 100%;
 }
@@ -1461,7 +1620,7 @@ const handleImageClick = () => {
 .question-type {
   padding: 8rpx 20rpx;
   border-radius: 20rpx;
-  background: #e3f2fd;
+  background: #dbeafe;
 }
 
 .type-single {
@@ -1482,7 +1641,7 @@ const handleImageClick = () => {
 
 .type-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--primary-strong);
 }
 
 .question-difficulty {
@@ -1503,15 +1662,44 @@ const handleImageClick = () => {
 
 .question-number text {
   font-size: 26rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .question-text {
   font-size: 30rpx;
   line-height: 1.7;
-  color: #333;
+  color: var(--text);
   margin-bottom: 16rpx;
   font-weight: 500;
+}
+
+/* Markdown 内容基础样式 */
+.question-text ::v-deep p,
+.explanation-text ::v-deep p {
+  margin: 0 0 12rpx;
+}
+
+.question-text ::v-deep p:last-child,
+.explanation-text ::v-deep p:last-child {
+  margin-bottom: 0;
+}
+
+.question-text ::v-deep ul,
+.question-text ::v-deep ol,
+.explanation-text ::v-deep ul,
+.explanation-text ::v-deep ol {
+  padding-left: 32rpx;
+  margin: 0 0 12rpx;
+}
+
+.question-text ::v-deep li,
+.explanation-text ::v-deep li {
+  margin-bottom: 6rpx;
+}
+
+.question-text ::v-deep .katex-display,
+.explanation-text ::v-deep .katex-display {
+  margin: 12rpx 0;
 }
 
 /* 题目内容中的图片样式 */
@@ -1547,13 +1735,13 @@ const handleImageClick = () => {
 
 .tag {
   padding: 6rpx 16rpx;
-  background: #f5f7fa;
+  background: #f1f5f9;
   border-radius: 8rpx;
 }
 
 .tag-text {
   font-size: 22rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 /* 选项列表 */
@@ -1574,34 +1762,34 @@ const handleImageClick = () => {
 }
 
 .option-item {
-  background: white;
-  border: 2rpx solid #e8eaed;
+  background: var(--card);
+  border: 2rpx solid var(--border);
   border-radius: 16rpx;
   padding: 20rpx 22rpx;
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-soft);
   box-sizing: border-box;
   width: 100%;
 }
 
 .option-item.selected {
-  border-color: #667eea;
-  background: #f5f7ff;
-  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.15);
+  border-color: var(--primary);
+  background: #eff6ff;
+  box-shadow: 0 4rpx 12rpx rgba(59, 130, 246, 0.15);
 }
 
 .option-item.correct {
-  border-color: #28a745;
-  background: #f1f9f3;
-  box-shadow: 0 4rpx 12rpx rgba(40, 167, 69, 0.12);
+  border-color: var(--success);
+  background: #ecfdf5;
+  box-shadow: 0 4rpx 12rpx rgba(34, 197, 94, 0.12);
 }
 
 .option-item.wrong {
-  border-color: #dc3545;
-  background: #fff5f5;
-  box-shadow: 0 4rpx 12rpx rgba(220, 53, 69, 0.12);
+  border-color: var(--danger);
+  background: #fef2f2;
+  box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.12);
 }
 
 .option-item.disabled {
@@ -1611,22 +1799,22 @@ const handleImageClick = () => {
 .option-label {
   width: 52rpx;
   height: 52rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.25);
+  box-shadow: 0 2rpx 8rpx rgba(59, 130, 246, 0.25);
   margin-right: 18rpx;
 }
 
 .option-item.correct .option-label {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
 .option-item.wrong .option-label {
-  background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 .label-text {
@@ -1643,7 +1831,7 @@ const handleImageClick = () => {
 .option-text {
   font-size: 28rpx;
   line-height: 1.65;
-  color: #2c3e50;
+  color: var(--text);
   font-weight: 400;
 }
 
@@ -1654,17 +1842,18 @@ const handleImageClick = () => {
 .selected-dot {
   width: 16rpx;
   height: 16rpx;
-  background: #667eea;
+  background: var(--primary);
   border-radius: 50%;
 }
 
 /* 答案解析 */
 .answer-section {
-  background: white;
+  background: var(--card);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
   box-sizing: border-box;
   width: 100%;
 }
@@ -1674,7 +1863,7 @@ const handleImageClick = () => {
   align-items: center;
   margin-bottom: 20rpx;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid var(--border);
 }
 
 .answer-header uni-icons {
@@ -1684,7 +1873,7 @@ const handleImageClick = () => {
 .answer-title {
   font-size: 28rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .answer-content {
@@ -1707,7 +1896,7 @@ const handleImageClick = () => {
 
 .answer-label {
   font-size: 26rpx;
-  color: #666;
+  color: var(--muted);
   min-width: 150rpx;
 }
 
@@ -1717,15 +1906,15 @@ const handleImageClick = () => {
 }
 
 .answer-value.correct {
-  color: #28a745;
+  color: var(--success);
 }
 
 .answer-value.wrong {
-  color: #dc3545;
+  color: var(--danger);
 }
 
 .explanation {
-  background: #f5f7fa;
+  background: #f8fafc;
   padding: 20rpx;
   border-radius: 10rpx;
   margin-top: 6rpx;
@@ -1734,7 +1923,7 @@ const handleImageClick = () => {
 .explanation-label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
   display: block;
   margin-bottom: 10rpx;
 }
@@ -1742,7 +1931,7 @@ const handleImageClick = () => {
 .explanation-text {
   font-size: 25rpx;
   line-height: 1.7;
-  color: #666;
+  color: var(--muted);
 }
 
 /* 解析内容中的图片样式 */
@@ -1770,9 +1959,10 @@ const handleImageClick = () => {
 .action-buttons {
   display: flex;
   padding: 12rpx 24rpx 24rpx;
-  background: white;
-  box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.06);
+  background: var(--card);
+  box-shadow: 0 -2rpx 16rpx rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
+  border-top: 1rpx solid var(--border);
 }
 
 .action-buttons .action-btn {
@@ -1807,24 +1997,24 @@ const handleImageClick = () => {
 }
 
 .action-btn.secondary {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
   color: white;
 }
 
 .action-btn.secondary:disabled {
-  background: #e8eaed !important;
-  color: #999 !important;
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
   box-shadow: none;
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
   flex: 1.4;
 }
 
 .action-btn.finish {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: white;
 }
 
@@ -1837,9 +2027,11 @@ const handleImageClick = () => {
 /* 统计弹窗 */
 .stats-popup {
   width: 640rpx;
-  background: white;
+  background: var(--card);
   border-radius: 24rpx;
   padding: 32rpx;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .popup-header {
@@ -1852,7 +2044,7 @@ const handleImageClick = () => {
 .popup-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .close-btn {
@@ -1897,20 +2089,20 @@ const handleImageClick = () => {
 }
 
 .stat-number.primary {
-  color: #667eea;
+  color: var(--primary);
 }
 
 .stat-number.success {
-  color: #28a745;
+  color: var(--success);
 }
 
 .stat-number.danger {
-  color: #dc3545;
+  color: var(--danger);
 }
 
 .stat-label {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
 }
 
 .accuracy-row {
@@ -1918,7 +2110,7 @@ const handleImageClick = () => {
   justify-content: space-between;
   align-items: center;
   padding: 24rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   border-radius: 16rpx;
 }
 
@@ -1935,14 +2127,14 @@ const handleImageClick = () => {
 
 .stats-note {
   padding: 20rpx;
-  background: #f5f7fa;
+  background: #f1f5f9;
   border-radius: 12rpx;
   text-align: center;
 }
 
 .note-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 .question-grid {
@@ -1962,8 +2154,8 @@ const handleImageClick = () => {
 }
 
 .grid-item.current {
-  border-color: #667eea;
-  background: #e3f2fd;
+  border-color: var(--primary);
+  background: #dbeafe;
 }
 
 .grid-item.answered {
@@ -1971,13 +2163,13 @@ const handleImageClick = () => {
 }
 
 .grid-item.correct {
-  background: #d4edda;
-  color: #28a745;
+  background: #dcfce7;
+  color: var(--success);
 }
 
 .grid-item.wrong {
-  background: #f8d7da;
-  color: #dc3545;
+  background: #fee2e2;
+  color: var(--danger);
 }
 
 .grid-number {
@@ -2008,12 +2200,12 @@ const handleImageClick = () => {
 }
 
 .popup-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
 }
 
 .popup-btn.secondary {
-  background: #f5f7fa;
-  color: #333;
+  background: #f1f5f9;
+  color: var(--text);
 }
 </style>

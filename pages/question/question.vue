@@ -1,27 +1,5 @@
 <template>
   <view class="question-container">
-    <!-- 学习统计卡片 -->
-    <view class="stats-card">
-      <view class="stats-header">
-        <text class="stats-title">练习统计</text>
-        <text class="stats-date">本周</text>
-      </view>
-      <view class="stats-grid">
-        <view class="stat-item">
-          <text class="stat-number">156</text>
-          <text class="stat-label">已练习</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-number">89%</text>
-          <text class="stat-label">正确率</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-number">23</text>
-          <text class="stat-label">错题数</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 科目选择 -->
     <view class="subject-section">
       <view class="subject-card" @click="openSubjectPicker">
@@ -64,33 +42,19 @@
       </uni-section>
     </view>
 
-    <!-- 错题本 -->
+    <!-- 错题集入口 -->
     <view class="wrong-questions">
-      <uni-section title="错题本" type="line" padding>
+      <uni-section title="错题集" type="line" padding>
         <view class="wrong-header">
-          <text class="wrong-count">共 {{ wrongQuestions.length }} 道错题</text>
-          <text class="clear-btn" @click="clearWrongQuestions">清空</text>
+          <text class="wrong-count">共 {{ wrongSetCount }} 道错题</text>
+          <text class="clear-btn" @click="openWrongSet">查看</text>
         </view>
-        <uni-list v-if="wrongQuestions.length > 0">
-          <uni-list-item 
-            v-for="(question, index) in wrongQuestions" 
-            :key="index"
-            :title="question.title"
-            :note="question.type"
-            :rightText="question.date"
-            clickable
-            @click="reviewQuestion(question)"
-          >
-            <template v-slot:header>
-              <view class="question-icon">
-                <uni-icons type="closeempty" size="18" color="#dc3545" />
-              </view>
-            </template>
-          </uni-list-item>
-        </uni-list>
-        <view v-else class="empty-state">
-          <uni-icons type="checkmarkempty" size="48" color="#28a745" />
-          <text class="empty-text">太棒了！暂无错题</text>
+        <view class="wrong-entry" @click="openWrongSet">
+          <view class="wrong-entry-left">
+            <uni-icons type="closeempty" size="20" color="#dc3545" />
+            <text class="wrong-entry-text">进入错题集</text>
+          </view>
+          <uni-icons type="arrowright" size="16" color="#ccc" />
         </view>
       </uni-section>
     </view>
@@ -122,42 +86,67 @@ const practiceModes = reactive([
     name: '真题练习',
     description: '历年考试真题，贴近实际考试',
     icon: 'fire',
-    color: '#dc3545',
-    count: 1200
+    color: '#EF4444',
+    count: 0
   },
   {
     key: 'mock',
     name: '模拟考试',
     description: '完整模拟考试，检验学习成果',
     icon: 'calendar',
-    color: '#007AFF',
-    count: 150
+    color: '#3B82F6',
+    count: 0
   },
   {
     key: 'special',
     name: '专项训练',
     description: '针对性练习，突破薄弱环节',
     icon: 'gear',
-    color: '#28a745',
-    count: 800
+    color: '#10B981',
+    count: 0
   },
   {
     key: 'random',
     name: '随机练习',
     description: '随机抽取题目，全面复习',
     icon: 'loop',
-    color: '#ffc107',
-    count: 500
+    color: '#F59E0B',
+    count: 0
   }
 ])
 
 const subjects = ref([])
 const selectedSubject = ref(SubjectStorage.get())
 const loadingSubjects = ref(false)
+const wrongSetCount = ref(0)
+const loadingSummary = ref(false)
 
 const syncSelectedSubject = (subject) => {
   selectedSubject.value = subject
   SubjectStorage.set(subject)
+}
+
+const applyModeCounts = (counts) => {
+  practiceModes.forEach((mode) => {
+    if (counts && counts[mode.key] !== undefined) {
+      mode.count = Number(counts[mode.key]) || 0
+    }
+  })
+}
+
+const fetchPracticeSummary = async () => {
+  if (!selectedSubject.value || loadingSummary.value) return
+  loadingSummary.value = true
+  try {
+    const data = await get('/practice/summary', { subjectId: selectedSubject.value.id }, { showLoading: false })
+    const modeCounts = data.mode_counts || {}
+    applyModeCounts(modeCounts)
+    wrongSetCount.value = Number(data.wrong_set_count || 0)
+  } catch (error) {
+    console.error('获取练习统计失败:', error)
+  } finally {
+    loadingSummary.value = false
+  }
 }
 
 const fetchSubjects = async () => {
@@ -181,6 +170,8 @@ const fetchSubjects = async () => {
         syncSelectedSubject(list[0])
       }
     }
+
+    await fetchPracticeSummary()
   } catch (error) {
     console.error('获取科目失败:', error)
     uni.showToast({
@@ -208,6 +199,7 @@ const openSubjectPicker = () => {
       const subject = subjects.value[res.tapIndex]
       if (subject) {
         syncSelectedSubject(subject)
+        fetchPracticeSummary()
       }
     }
   })
@@ -223,6 +215,15 @@ const ensureSubjectSelected = () => {
   return false
 }
 
+const openWrongSet = () => {
+  if (!ensureSubjectSelected()) return
+  const subjectId = selectedSubject.value?.id || 0
+  const subjectName = selectedSubject.value?.name || ''
+  uni.navigateTo({
+    url: `/pages/wrong-set/wrong-set?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`
+  })
+}
+
 onShow(() => {
   const stored = SubjectStorage.get()
   if (stored) {
@@ -231,30 +232,11 @@ onShow(() => {
   fetchSubjects()
 })
 
-// 错题数据
-const wrongQuestions = reactive([
-  {
-    title: '关于项目章程的描述，以下哪项是错误的？',
-    type: '单选题',
-    date: '2天前'
-  },
-  {
-    title: '项目范围说明书不包括以下哪项内容？',
-    type: '单选题',
-    date: '3天前'
-  },
-  {
-    title: '在进行风险定性分析时，主要考虑的因素包括...',
-    type: '多选题',
-    date: '5天前'
-  }
-])
-
 // 浮动按钮配置
 const fabPattern = reactive({
-  color: '#007AFF',
+  color: '#3B82F6',
   backgroundColor: '#fff',
-  selectedColor: '#007AFF'
+  selectedColor: '#2563EB'
 })
 
 const fabContent = reactive([
@@ -302,32 +284,6 @@ const startPractice = (mode) => {
   }
 }
 
-// 复习错题
-const reviewQuestion = (question) => {
-  uni.showToast({
-    title: '查看错题详情',
-    icon: 'none'
-  })
-  // 这里后续跳转到错题详情页面
-}
-
-// 清空错题
-const clearWrongQuestions = () => {
-  uni.showModal({
-    title: '确认清空',
-    content: '确定要清空所有错题吗？',
-    success: (res) => {
-      if (res.confirm) {
-        wrongQuestions.splice(0)
-        uni.showToast({
-          title: '已清空错题本',
-          icon: 'success'
-        })
-      }
-    }
-  })
-}
-
 // 浮动按钮点击
 const fabClick = (e) => {
   if (!ensureSubjectSelected()) return
@@ -347,40 +303,23 @@ const onTabChange = (index) => {
 
 <style lang="scss" scoped>
 .question-container {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.08);
+  --shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.12);
   padding: 0 0 120rpx 0; /* 底部留出导航栏空间 */
-  background-color: #f8f9fa;
+  background: radial-gradient(120% 120% at 20% 0%, #eff6ff 0%, transparent 50%),
+    radial-gradient(120% 120% at 100% 20%, #fff7ed 0%, transparent 45%),
+    var(--bg);
   min-height: 100vh;
-}
-
-.stats-card {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  margin: 20rpx;
-  padding: 40rpx;
-  border-radius: 20rpx;
-  color: white;
-  box-shadow: 0 8rpx 32rpx rgba(79, 172, 254, 0.3);
-}
-
-.stats-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30rpx;
-}
-
-.stats-title {
-  font-size: 32rpx;
-  font-weight: 600;
-}
-
-.stats-date {
-  font-size: 26rpx;
-  opacity: 0.8;
-}
-
-.stats-grid {
-  display: flex;
-  justify-content: space-around;
+  font-family: 'Poppins', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--text);
 }
 
 .subject-section {
@@ -388,13 +327,14 @@ const onTabChange = (index) => {
 }
 
 .subject-card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx 28rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5ff 100%);
+  border-radius: 20rpx;
+  padding: 26rpx 30rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .subject-info {
@@ -405,13 +345,14 @@ const onTabChange = (index) => {
 
 .subject-label {
   font-size: 24rpx;
-  color: #999;
+  color: var(--muted);
+  letter-spacing: 0.5rpx;
 }
 
 .subject-name {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
 }
 
 .subject-action {
@@ -422,23 +363,8 @@ const onTabChange = (index) => {
 
 .subject-action-text {
   font-size: 24rpx;
-  color: #666;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-number {
-  display: block;
-  font-size: 36rpx;
-  font-weight: bold;
-  margin-bottom: 8rpx;
-}
-
-.stat-label {
-  font-size: 24rpx;
-  opacity: 0.9;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .practice-modes {
@@ -446,27 +372,30 @@ const onTabChange = (index) => {
 }
 
 .mode-list {
-  background: white;
-  border-radius: 16rpx;
-  overflow: hidden;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
 .mode-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-  transition: background-color 0.2s ease;
-}
-
-.mode-item:last-child {
-  border-bottom: none;
+  padding: 28rpx;
+  border-radius: 18rpx;
+  border: 1rpx solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mode-item:active {
-  background-color: #f8f9fa;
+  transform: scale(0.99);
+  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, 0.1);
 }
 
 .mode-left {
@@ -492,13 +421,13 @@ const onTabChange = (index) => {
 .mode-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
   margin-bottom: 8rpx;
 }
 
 .mode-desc {
   font-size: 24rpx;
-  color: #666;
+  color: var(--muted);
 }
 
 .mode-right {
@@ -508,56 +437,64 @@ const onTabChange = (index) => {
 
 .mode-count {
   font-size: 24rpx;
-  color: #999;
-  margin-right: 10rpx;
+  color: var(--primary-strong);
+  margin-right: 12rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #e0e7ff;
+  font-weight: 600;
 }
 
 .wrong-questions {
   margin: 20rpx;
-  background: white;
-  border-radius: 16rpx;
+  background: var(--card);
+  border-radius: 20rpx;
   overflow: hidden;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .wrong-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding: 22rpx 30rpx;
+  border-bottom: 1rpx solid var(--border);
 }
 
 .wrong-count {
   font-size: 28rpx;
-  color: #333;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .clear-btn {
-  font-size: 26rpx;
-  color: #007AFF;
+  font-size: 24rpx;
+  color: #fff;
+  background: var(--primary);
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  box-shadow: 0 6rpx 16rpx rgba(59, 130, 246, 0.25);
 }
 
-.question-icon {
-  width: 60rpx;
-  height: 60rpx;
-  background: #fff5f5;
-  border-radius: 12rpx;
+.wrong-entry {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-right: 20rpx;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  background: #f8fafc;
+  border-top: 1rpx solid var(--border);
 }
 
-.empty-state {
-  padding: 60rpx;
-  text-align: center;
+.wrong-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
 }
 
-.empty-text {
-  display: block;
-  margin-top: 20rpx;
+.wrong-entry-text {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text);
+  font-weight: 600;
 }
 </style> 
