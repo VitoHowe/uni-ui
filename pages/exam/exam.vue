@@ -351,18 +351,18 @@ const progressPercent = computed(() => {
   }
 
   // 整卷模式计算整体进度
-  let totalQuestions = 0
+  let totalQuestionCount = 0
   let currentPosition = 0
 
   chapters.value.forEach((chapter, index) => {
-    totalQuestions += chapter.question_count
+    totalQuestionCount += chapter.question_count
     if (index < currentChapterIndex.value) {
       currentPosition += chapter.question_count
     }
   })
   currentPosition += currentQuestionNumber.value
 
-  return totalQuestions > 0 ? Math.round((currentPosition / totalQuestions) * 100) : 0
+  return totalQuestionCount > 0 ? Math.round((currentPosition / totalQuestionCount) * 100) : 0
 })
 
 // 已答题数
