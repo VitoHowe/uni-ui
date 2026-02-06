@@ -1706,15 +1706,16 @@ const handleImageClick = () => {
 .question-text ::v-deep img,
 .question-text ::v-deep image {
   max-width: 100% !important;
-  width: 100% !important;
+  width: auto !important;
   height: auto !important;
   border-radius: 12rpx;
-  margin: 24rpx 0;
+  margin: 24rpx auto;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
   display: block;
   background: #f5f7fa;
   border: 2rpx solid #e8eaed;
   transition: all 0.3s ease;
+  object-fit: contain;
 }
 
 .question-text ::v-deep img:active,
@@ -1938,15 +1939,16 @@ const handleImageClick = () => {
 .explanation ::v-deep img,
 .explanation ::v-deep image {
   max-width: 100% !important;
-  width: 100% !important;
+  width: auto !important;
   height: auto !important;
   border-radius: 10rpx;
-  margin: 16rpx 0;
+  margin: 16rpx auto;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   display: block;
   background: #fafafa;
   border: 1rpx solid #e0e0e0;
   transition: all 0.3s ease;
+  object-fit: contain;
 }
 
 .explanation ::v-deep img:active,

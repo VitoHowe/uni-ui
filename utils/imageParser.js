@@ -49,6 +49,15 @@ const applyInlineStyle = (html, tagName, styleText) => {
   })
 }
 
+const enhanceImageLayout = (html) => {
+  if (!html) return ''
+  return applyInlineStyle(
+    html,
+    'img',
+    'max-width:100%;width:auto;height:auto;display:block;margin:12rpx auto;'
+  )
+}
+
 const enhanceTableLayout = (html) => {
   if (!html) return ''
   return html.replace(/<table[\s\S]*?<\/table>/gi, (tableHtml) => {
@@ -121,7 +130,7 @@ export function parseQuestionImages(text, bankId, baseUrl = 'http://localhost:30
   const withImages = replaceImagePlaceholders(text, bankId, baseUrl)
   const { text: withTokens, tokens } = tokenizeMathExpressions(withImages)
   const html = sanitizeRenderedHtml(markdown.render(withTokens))
-  const enhancedHtml = enhanceTableLayout(html)
+  const enhancedHtml = enhanceTableLayout(enhanceImageLayout(html))
   return restoreMathExpressions(enhancedHtml, tokens)
 }
 
