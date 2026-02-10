@@ -1,0 +1,171 @@
+/* 水平间距 */
+/* 水平间距 */
+.question-container.data-v-bca3e236 {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.08);
+  --shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.12);
+  padding: 0 0 120rpx 0;
+  /* 底部留出导航栏空间 */
+  background: radial-gradient(120% 120% at 20% 0%, #eff6ff 0%, transparent 50%), radial-gradient(120% 120% at 100% 20%, #fff7ed 0%, transparent 45%), var(--bg);
+  min-height: 100vh;
+  font-family: "Poppins", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+}
+.subject-section.data-v-bca3e236 {
+  margin: 0 20rpx 20rpx;
+}
+.subject-card.data-v-bca3e236 {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5ff 100%);
+  border-radius: 20rpx;
+  padding: 26rpx 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
+}
+.subject-info.data-v-bca3e236 {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.subject-label.data-v-bca3e236 {
+  font-size: 24rpx;
+  color: var(--muted);
+  letter-spacing: 0.5rpx;
+}
+.subject-name.data-v-bca3e236 {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+.subject-action.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.subject-action-text.data-v-bca3e236 {
+  font-size: 24rpx;
+  color: var(--primary);
+  font-weight: 600;
+}
+.practice-modes.data-v-bca3e236 {
+  margin: 20rpx;
+}
+.mode-list.data-v-bca3e236 {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.mode-item.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx;
+  border-radius: 18rpx;
+  border: 1rpx solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.mode-item.data-v-bca3e236:active {
+  transform: scale(0.99);
+  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, 0.1);
+}
+.mode-left.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+}
+.mode-icon.data-v-bca3e236 {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.mode-info.data-v-bca3e236 {
+  display: flex;
+  flex-direction: column;
+}
+.mode-name.data-v-bca3e236 {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8rpx;
+}
+.mode-desc.data-v-bca3e236 {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+.mode-right.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+}
+.mode-count.data-v-bca3e236 {
+  font-size: 24rpx;
+  color: var(--primary-strong);
+  margin-right: 12rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #e0e7ff;
+  font-weight: 600;
+}
+.wrong-questions.data-v-bca3e236 {
+  margin: 20rpx;
+  background: var(--card);
+  border-radius: 20rpx;
+  overflow: hidden;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
+}
+.wrong-header.data-v-bca3e236 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22rpx 30rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+.wrong-count.data-v-bca3e236 {
+  font-size: 28rpx;
+  color: var(--text);
+  font-weight: 600;
+}
+.clear-btn.data-v-bca3e236 {
+  font-size: 24rpx;
+  color: #fff;
+  background: var(--primary);
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  box-shadow: 0 6rpx 16rpx rgba(59, 130, 246, 0.25);
+}
+.wrong-entry.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  background: #f8fafc;
+  border-top: 1rpx solid var(--border);
+}
+.wrong-entry-left.data-v-bca3e236 {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.wrong-entry-text.data-v-bca3e236 {
+  font-size: 28rpx;
+  color: var(--text);
+  font-weight: 600;
+}

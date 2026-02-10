@@ -1,7 +1,7 @@
 // 环境配置
 const ENV_CONFIG = {
   development: {
-    BASE_URL: 'http://localhost:3001/api'
+    BASE_URL: 'https://wxnode.mayday.qzz.io/api'
   },
   production: {
     BASE_URL: 'https://wxnode.mayday.qzz.io/api'

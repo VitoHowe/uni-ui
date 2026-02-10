@@ -36,7 +36,7 @@ const _sfc_main = {
         text: "学习"
       },
       {
-        pagePath: "/pages/question/question",
+        pagePath: "/pkg-exam/pages/question/question",
         iconType: "help",
         text: "题库"
       },
@@ -49,10 +49,11 @@ const _sfc_main = {
     const switchTab = (tab, index) => {
       if (currentIndex.value === index)
         return;
+      const prevIndex = currentIndex.value;
       if (utils_auth.RouteGuard.isProtectedRoute(tab.pagePath)) {
         const isLoggedIn = utils_auth.LoginStateManager.getLoginState();
         if (!isLoggedIn) {
-          common_vendor.index.__f__("log", "at components/CustomTabBar.vue:83", "❌ Tab切换需要登录权限:", tab.pagePath);
+          common_vendor.index.__f__("log", "at components/CustomTabBar.vue:84", "❌ Tab切换需要登录权限:", tab.pagePath);
           utils_auth.RouteGuard.saveReturnPath(tab.pagePath);
           common_vendor.index.showModal({
             title: "需要登录",
@@ -72,18 +73,15 @@ const _sfc_main = {
       }
       currentIndex.value = index;
       emit("change", index);
-      common_vendor.index.switchTab({
+      common_vendor.index.reLaunch({
         url: tab.pagePath,
-        fail: () => {
-          common_vendor.index.redirectTo({
-            url: tab.pagePath,
-            fail: () => {
-              common_vendor.index.__f__("error", "at components/CustomTabBar.vue:123", "❌ 页面跳转失败，恢复tab状态");
-              common_vendor.index.showToast({
-                title: "页面跳转失败",
-                icon: "error"
-              });
-            }
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at components/CustomTabBar.vue:120", "❌ Tab 页面跳转失败:", tab.pagePath, err);
+          currentIndex.value = prevIndex;
+          emit("change", prevIndex);
+          common_vendor.index.showToast({
+            title: "页面跳转失败",
+            icon: "error"
           });
         }
       });

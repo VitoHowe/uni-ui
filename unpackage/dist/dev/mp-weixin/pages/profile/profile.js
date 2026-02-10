@@ -120,7 +120,7 @@ const _sfc_main = {
           common_vendor.index.showToast({ title: "学习报告", icon: "none" });
           break;
         case "fileManagement":
-          common_vendor.index.navigateTo({ url: "/pages/upload/upload" });
+          common_vendor.index.navigateTo({ url: "/pkg-tools/pages/upload/upload" });
           break;
       }
     };

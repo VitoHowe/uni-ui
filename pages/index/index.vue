@@ -105,13 +105,51 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import CustomTabBar from "@/components/CustomTabBar.vue"
 
 // 考试倒计时
 const examCountdown = reactive({
-  days: 158 // 这里可以根据实际考试日期计算
+  days: 0
 })
+
+const EXAM_MONTH = 5
+const EXAM_DAY = 23
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+let countdownTimer = 0
+
+const calcDaysUntilExam = (now = new Date()) => {
+  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  let targetUtc = Date.UTC(now.getFullYear(), EXAM_MONTH - 1, EXAM_DAY)
+  if (targetUtc < todayUtc) {
+    targetUtc = Date.UTC(now.getFullYear() + 1, EXAM_MONTH - 1, EXAM_DAY)
+  }
+  return Math.max(0, Math.floor((targetUtc - todayUtc) / MS_PER_DAY))
+}
+
+const refreshExamCountdown = () => {
+  examCountdown.days = calcDaysUntilExam()
+}
+
+const stopCountdownTimer = () => {
+  if (countdownTimer) clearTimeout(countdownTimer)
+  countdownTimer = 0
+}
+
+const scheduleNextDayRefresh = () => {
+  stopCountdownTimer()
+
+  const now = new Date()
+  const nextLocalDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  const delay = Math.max(1000, nextLocalDay.getTime() - now.getTime() + 1000)
+
+  countdownTimer = setTimeout(() => {
+    refreshExamCountdown()
+    scheduleNextDayRefresh()
+  }, delay)
+}
 
 // 总体学习进度
 const overallProgress = ref(68)
@@ -189,7 +227,14 @@ const handleActionClick = (action) => {
       uni.navigateTo({ url: '/pages/study/study' })
       break
     case 'mock_exam':
-      uni.navigateTo({ url: '/pages/question/question' })
+      // 题库属于“Tab”级页面，直接 reLaunch 更符合预期（且对分包页面更稳定）
+      uni.reLaunch({
+        url: '/pkg-exam/pages/question/question',
+        fail: (err) => {
+          console.error('❌ 打开题库失败:', err)
+          uni.showToast({ title: '打开题库失败', icon: 'none' })
+        }
+      })
       break
     case 'wrong_questions':
       uni.showToast({ title: '错题本', icon: 'none' })
@@ -223,6 +268,21 @@ const onTabChange = (index) => {
 
 onMounted(() => {
   // 页面加载时可以获取最新的学习数据
+  refreshExamCountdown()
+  scheduleNextDayRefresh()
+})
+
+onShow(() => {
+  refreshExamCountdown()
+  scheduleNextDayRefresh()
+})
+
+onHide(() => {
+  stopCountdownTimer()
+})
+
+onUnmounted(() => {
+  stopCountdownTimer()
 })
 </script>
 

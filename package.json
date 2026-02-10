@@ -1,10 +1,25 @@
 {
   "scripts": {
+    "check:mp-weixin-size": "node scripts/check-mp-weixin-size.js",
     "postinstall": "node scripts/patch-katex-css.js"
   },
   "dependencies": {
     "katex": "^0.16.28",
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.3"
+  },
+  "uni-app": {
+    "scripts": {
+      "mp-weixin-debug": {
+        "title": "微信小程序（含 debug 页）",
+        "env": {
+          "UNI_PLATFORM": "mp-weixin",
+          "WITH_DEBUG_PAGE": "true"
+        },
+        "define": {
+          "WITH_DEBUG_PAGE": true
+        }
+      }
+    }
   }
 }

@@ -8,16 +8,16 @@ if (!Math) {
   "./pages/study/study.js";
   "./pages/word-practice/word-practice.js";
   "./pages/word-practice/word-detail.js";
-  "./pages/question/question.js";
   "./pages/profile/profile.js";
-  "./pages/upload/upload.js";
   "./pages/login/login.js";
-  "./pages/debug/debug.js";
-  "./pages/exam-list/exam-list.js";
-  "./pages/real-exam-list/real-exam-list.js";
-  "./pages/special-list/special-list.js";
-  "./pages/real-exam-wrong/real-exam-wrong.js";
-  "./pages/exam/exam.js";
+  "./pkg-exam/pages/question/question.js";
+  "./pkg-exam/pages/wrong-set/wrong-set.js";
+  "./pkg-exam/pages/exam-list/exam-list.js";
+  "./pkg-exam/pages/real-exam-list/real-exam-list.js";
+  "./pkg-exam/pages/special-list/special-list.js";
+  "./pkg-exam/pages/real-exam-wrong/real-exam-wrong.js";
+  "./pkg-exam/pages/exam/exam.js";
+  "./pkg-tools/pages/upload/upload.js";
 }
 const _sfc_main = {
   async onLaunch() {

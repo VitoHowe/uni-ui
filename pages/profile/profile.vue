@@ -246,7 +246,7 @@ const handleMenuClick = (menu) => {
       uni.showToast({ title: '学习报告', icon: 'none' })
       break
     case 'fileManagement':
-      uni.navigateTo({ url: '/pages/upload/upload' })
+      uni.navigateTo({ url: '/pkg-tools/pages/upload/upload' })
       break
     default:
       break

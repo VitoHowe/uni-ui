@@ -60,7 +60,7 @@ const tabList = [
     text: '学习'
   },
   {
-    pagePath: '/pages/question/question',
+    pagePath: '/pkg-exam/pages/question/question',
     iconType: 'help',
     text: '题库'
   },
@@ -74,6 +74,7 @@ const tabList = [
 // 切换tab
 const switchTab = (tab, index) => {
   if (currentIndex.value === index) return
+  const prevIndex = currentIndex.value
   
   // 检查页面访问权限
   if (RouteGuard.isProtectedRoute(tab.pagePath)) {
@@ -112,24 +113,17 @@ const switchTab = (tab, index) => {
   emit('change', index)
   
   // 执行页面跳转
-  uni.switchTab({
+  // 自定义 TabBar 不依赖小程序原生 tabBar，直接用 reLaunch 最稳：主包/分包页面都能跳
+  uni.reLaunch({
     url: tab.pagePath,
-    fail: () => {
-      // 如果switchTab失败，使用redirectTo
-      uni.redirectTo({
-        url: tab.pagePath,
-        fail: () => {
-          // 如果页面跳转彻底失败，恢复原来的tab状态
-          console.error('❌ 页面跳转失败，恢复tab状态')
-          // 这里需要恢复到之前的状态，但由于我们无法确定之前的状态
-          // 可以通过emit通知父组件处理，或者重新计算当前页面对应的tab
-          
-          // 简单的处理方式：显示错误提示
-          uni.showToast({
-            title: '页面跳转失败',
-            icon: 'error'
-          })
-        }
+    fail: (err) => {
+      console.error('❌ Tab 页面跳转失败:', tab.pagePath, err)
+      // 恢复 UI 状态，避免“Tab 高亮变了但页面没跳过去”
+      currentIndex.value = prevIndex
+      emit('change', prevIndex)
+      uni.showToast({
+        title: '页面跳转失败',
+        icon: 'error'
       })
     }
   })

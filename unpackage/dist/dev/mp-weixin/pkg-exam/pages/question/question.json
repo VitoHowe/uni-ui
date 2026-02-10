@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "题库",
+  "usingComponents": {
+    "uni-icons": "../../../uni_modules/uni-icons/components/uni-icons/uni-icons",
+    "uni-section": "../../../uni_modules/uni-section/components/uni-section/uni-section",
+    "uni-fab": "../../../uni_modules/uni-fab/components/uni-fab/uni-fab",
+    "custom-tab-bar": "../../../components/CustomTabBar"
+  }
+}

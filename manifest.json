@@ -52,7 +52,14 @@
         /* 小程序特有相关 */
         "appid" : "wxd4ebde93a8cc9f00",
         "setting" : {
-            "urlCheck" : false
+            "urlCheck" : false,
+            "es6" : true,
+            "postcss" : true,
+            "minified" : true
+        },
+        "lazyCodeLoading" : "requiredComponents",
+        "optimization" : {
+            "subPackages" : true
         },
         "usingComponents" : true
     },

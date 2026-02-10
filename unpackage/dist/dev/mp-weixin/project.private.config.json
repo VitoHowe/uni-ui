@@ -19,6 +19,10 @@
     "ignoreDevUnusedFiles": false,
     "bigPackageSizeSupport": false
   },
+  "optimization":{
+	"subPackages":true  
+  },
+  "lazyCodeLoading":"requiredComponents",
   "libVersion": "3.10.1",
   "condition": {}
 }

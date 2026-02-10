@@ -4,16 +4,28 @@
     "pages/study/study",
     "pages/word-practice/word-practice",
     "pages/word-practice/word-detail",
-    "pages/question/question",
     "pages/profile/profile",
-    "pages/upload/upload",
-    "pages/login/login",
-    "pages/debug/debug",
-    "pages/exam-list/exam-list",
-    "pages/real-exam-list/real-exam-list",
-    "pages/special-list/special-list",
-    "pages/real-exam-wrong/real-exam-wrong",
-    "pages/exam/exam"
+    "pages/login/login"
+  ],
+  "subPackages": [
+    {
+      "root": "pkg-exam",
+      "pages": [
+        "pages/question/question",
+        "pages/wrong-set/wrong-set",
+        "pages/exam-list/exam-list",
+        "pages/real-exam-list/real-exam-list",
+        "pages/special-list/special-list",
+        "pages/real-exam-wrong/real-exam-wrong",
+        "pages/exam/exam"
+      ]
+    },
+    {
+      "root": "pkg-tools",
+      "pages": [
+        "pages/upload/upload"
+      ]
+    }
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -21,5 +33,14 @@
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#f8f9fa"
   },
+  "preloadRule": {
+    "pages/index/index": {
+      "network": "all",
+      "packages": [
+        "pkg-exam"
+      ]
+    }
+  },
+  "lazyCodeLoading": "requiredComponents",
   "usingComponents": {}
 }

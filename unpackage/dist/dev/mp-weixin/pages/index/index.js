@@ -16,13 +16,42 @@ if (!Math) {
   (_easycom_uni_section + _easycom_uni_icons + _easycom_uni_list_item + _easycom_uni_list + CustomTabBar)();
 }
 const CustomTabBar = () => "../../components/CustomTabBar.js";
+const EXAM_MONTH = 5;
+const EXAM_DAY = 23;
+const MS_PER_DAY = 24 * 60 * 60 * 1e3;
 const _sfc_main = {
   __name: "index",
   setup(__props) {
     const examCountdown = common_vendor.reactive({
-      days: 158
-      // 这里可以根据实际考试日期计算
+      days: 0
     });
+    let countdownTimer = 0;
+    const calcDaysUntilExam = (now = /* @__PURE__ */ new Date()) => {
+      const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      let targetUtc = Date.UTC(now.getFullYear(), EXAM_MONTH - 1, EXAM_DAY);
+      if (targetUtc < todayUtc) {
+        targetUtc = Date.UTC(now.getFullYear() + 1, EXAM_MONTH - 1, EXAM_DAY);
+      }
+      return Math.max(0, Math.floor((targetUtc - todayUtc) / MS_PER_DAY));
+    };
+    const refreshExamCountdown = () => {
+      examCountdown.days = calcDaysUntilExam();
+    };
+    const stopCountdownTimer = () => {
+      if (countdownTimer)
+        clearTimeout(countdownTimer);
+      countdownTimer = 0;
+    };
+    const scheduleNextDayRefresh = () => {
+      stopCountdownTimer();
+      const now = /* @__PURE__ */ new Date();
+      const nextLocalDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const delay = Math.max(1e3, nextLocalDay.getTime() - now.getTime() + 1e3);
+      countdownTimer = setTimeout(() => {
+        refreshExamCountdown();
+        scheduleNextDayRefresh();
+      }, delay);
+    };
     const overallProgress = common_vendor.ref(68);
     const progressStats = common_vendor.reactive([
       { label: "已学章节", value: "18/26" },
@@ -77,7 +106,13 @@ const _sfc_main = {
           common_vendor.index.navigateTo({ url: "/pages/study/study" });
           break;
         case "mock_exam":
-          common_vendor.index.navigateTo({ url: "/pages/question/question" });
+          common_vendor.index.reLaunch({
+            url: "/pkg-exam/pages/question/question",
+            fail: (err) => {
+              common_vendor.index.__f__("error", "at pages/index/index.vue:234", "❌ 打开题库失败:", err);
+              common_vendor.index.showToast({ title: "打开题库失败", icon: "none" });
+            }
+          });
           break;
         case "wrong_questions":
           common_vendor.index.showToast({ title: "错题本", icon: "none" });
@@ -100,9 +135,21 @@ const _sfc_main = {
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/index/index.vue:221", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:266", "切换到tab:", index);
     };
     common_vendor.onMounted(() => {
+      refreshExamCountdown();
+      scheduleNextDayRefresh();
+    });
+    common_vendor.onShow(() => {
+      refreshExamCountdown();
+      scheduleNextDayRefresh();
+    });
+    common_vendor.onHide(() => {
+      stopCountdownTimer();
+    });
+    common_vendor.onUnmounted(() => {
+      stopCountdownTimer();
     });
     return (_ctx, _cache) => {
       return {

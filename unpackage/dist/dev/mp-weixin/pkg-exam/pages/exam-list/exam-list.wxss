@@ -1,0 +1,570 @@
+/* 水平间距 */
+/* 水平间距 */
+.exam-list-container.data-v-ab283ccc {
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --accent: #f97316;
+  --success: #22c55e;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-soft: 0 10rpx 24rpx rgba(15, 23, 42, 0.06);
+  --shadow: 0 18rpx 34rpx rgba(15, 23, 42, 0.12);
+  min-height: 100vh;
+  background: radial-gradient(120% 120% at 10% 0%, #eff6ff 0%, transparent 55%), radial-gradient(120% 120% at 100% 10%, #fff7ed 0%, transparent 50%), var(--bg);
+  padding-bottom: 40rpx;
+  font-family: "Poppins", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+}
+.subject-bar.data-v-ab283ccc {
+  margin: 20rpx;
+  padding: 26rpx 30rpx;
+  background: var(--card);
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow);
+}
+.subject-info.data-v-ab283ccc {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.subject-label.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+.subject-name.data-v-ab283ccc {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+.subject-action.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.subject-action-text.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* 搜索栏 */
+.search-section.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  padding: 0 20rpx 20rpx;
+  background: transparent;
+  gap: 16rpx;
+}
+.search-box.data-v-ab283ccc {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border-radius: 999rpx;
+  padding: 16rpx 24rpx;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+  gap: 12rpx;
+}
+.search-input.data-v-ab283ccc {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--text);
+}
+.filter-btn.data-v-ab283ccc {
+  width: 72rpx;
+  height: 72rpx;
+  background: var(--card);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* 练习统计 */
+.practice-stats.data-v-ab283ccc {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 20rpx 10rpx;
+}
+.practice-stats .stat-card.data-v-ab283ccc {
+  background: var(--card);
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+  padding: 22rpx 12rpx;
+}
+.practice-stats .stat-number.data-v-ab283ccc {
+  font-size: 34rpx;
+  color: var(--text);
+}
+.practice-stats .stat-label.data-v-ab283ccc {
+  color: var(--muted);
+}
+
+/* 统计卡片 */
+.stats-overview.data-v-ab283ccc {
+  display: flex;
+  gap: 16rpx;
+  padding: 20rpx;
+}
+.stat-card.data-v-ab283ccc {
+  flex: 1;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  padding: 32rpx 20rpx;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 10rpx 24rpx rgba(59, 130, 246, 0.25);
+}
+.stat-card.data-v-ab283ccc:nth-child(2) {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+}
+.stat-card.data-v-ab283ccc:nth-child(3) {
+  background: linear-gradient(135deg, #22c55e 0%, #86efac 100%);
+}
+.stat-number.data-v-ab283ccc {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8rpx;
+}
+.stat-label.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 题库列表 */
+.bank-list.data-v-ab283ccc {
+  padding: 0 20rpx;
+}
+
+/* 加载状态 */
+.loading-state.data-v-ab283ccc {
+  padding: 120rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+}
+.loading-icon.data-v-ab283ccc {
+  animation: spin-ab283ccc 1s linear infinite;
+}
+@keyframes spin-ab283ccc {
+from {
+    transform: rotate(0deg);
+}
+to {
+    transform: rotate(360deg);
+}
+}
+.loading-text.data-v-ab283ccc {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 空状态 */
+.empty-state.data-v-ab283ccc {
+  padding: 120rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.empty-title.data-v-ab283ccc {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 32rpx;
+  margin-bottom: 16rpx;
+}
+.empty-desc.data-v-ab283ccc {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 48rpx;
+}
+.upload-btn.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  color: white;
+  border: none;
+  padding: 24rpx 48rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+}
+
+/* 题库卡片 */
+.bank-cards.data-v-ab283ccc {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+.bank-card.data-v-ab283ccc {
+  background: var(--card);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  border: 1rpx solid var(--border);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.bank-card.data-v-ab283ccc:active {
+  transform: scale(0.98);
+}
+
+/* 卡片头部 */
+.card-header.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.bank-icon.data-v-ab283ccc {
+  width: 80rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+.bank-info.data-v-ab283ccc {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.bank-name.data-v-ab283ccc {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+.file-name.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+.more-btn.data-v-ab283ccc {
+  padding: 8rpx;
+}
+
+/* 卡片内容 */
+.card-content.data-v-ab283ccc {
+  display: flex;
+  gap: 32rpx;
+  margin-bottom: 20rpx;
+}
+.content-item.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.item-text.data-v-ab283ccc {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+/* 标签 */
+.card-tags.data-v-ab283ccc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+.tag.data-v-ab283ccc {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  background: #f0f0f0;
+}
+.tag-single.data-v-ab283ccc {
+  background: #e3f2fd;
+}
+.tag-multiple.data-v-ab283ccc {
+  background: #fff3e0;
+}
+.tag-judge.data-v-ab283ccc {
+  background: #e8f5e9;
+}
+.tag-fill.data-v-ab283ccc {
+  background: #fce4ec;
+}
+.tag-text.data-v-ab283ccc {
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 学习进度区域 */
+.progress-section.data-v-ab283ccc {
+  padding: 24rpx 0;
+  border-top: 1rpx solid #f0f0f0;
+  margin-top: 20rpx;
+}
+.progress-info.data-v-ab283ccc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+.progress-label.data-v-ab283ccc {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+.progress-value.data-v-ab283ccc {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--primary-strong);
+}
+.progress-bar-wrapper.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.progress-bar-bg.data-v-ab283ccc {
+  flex: 1;
+  height: 12rpx;
+  background: #e2e8f0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+.progress-bar-fill.data-v-ab283ccc {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-strong) 100%);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+  min-width: 2%;
+}
+.progress-text.data-v-ab283ccc {
+  font-size: 22rpx;
+  color: #999;
+  white-space: nowrap;
+}
+.completed-info.data-v-ab283ccc {
+  margin-top: 8rpx;
+  display: flex;
+  align-items: center;
+}
+.completed-text.data-v-ab283ccc {
+  font-size: 22rpx;
+  color: var(--success);
+}
+
+/* 卡片底部 */
+.card-footer.data-v-ab283ccc {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.footer-btn.data-v-ab283ccc {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: white;
+}
+.footer-btn.primary.data-v-ab283ccc {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  border: none;
+}
+.footer-btn .btn-text.data-v-ab283ccc {
+  font-size: 28rpx;
+  color: white;
+}
+
+/* 筛选弹窗 */
+.filter-content.data-v-ab283ccc {
+  background: white;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+.filter-header.data-v-ab283ccc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+.filter-title.data-v-ab283ccc {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+.filter-reset.data-v-ab283ccc {
+  font-size: 28rpx;
+  color: var(--primary);
+}
+.filter-section.data-v-ab283ccc {
+  margin-bottom: 32rpx;
+}
+.section-title.data-v-ab283ccc {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+  display: block;
+}
+.filter-options.data-v-ab283ccc {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.option-item.data-v-ab283ccc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  background: #f5f7fa;
+  border-radius: 12rpx;
+}
+.option-item.active.data-v-ab283ccc {
+  background: #dbeafe;
+}
+.option-text.data-v-ab283ccc {
+  font-size: 28rpx;
+  color: #333;
+}
+.confirm-btn.data-v-ab283ccc {
+  width: 100%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  color: white;
+  border: none;
+  padding: 28rpx;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+/* 操作弹窗 */
+.action-content.data-v-ab283ccc {
+  background: white;
+  border-radius: 32rpx 32rpx 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.action-item.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.action-item.cancel.data-v-ab283ccc {
+  justify-content: center;
+  border-bottom: none;
+  margin-top: 8rpx;
+}
+.action-item.cancel .action-text.data-v-ab283ccc {
+  color: #666;
+}
+.action-item.danger .action-text.warning.data-v-ab283ccc {
+  color: #ff9500;
+  font-weight: 500;
+}
+.action-text.data-v-ab283ccc {
+  font-size: 30rpx;
+  color: #333;
+}
+
+/* 练习模式选择弹窗 */
+.mode-popup.data-v-ab283ccc {
+  width: 600rpx;
+  background: white;
+  border-radius: 24rpx;
+  padding: 32rpx;
+}
+.mode-options.data-v-ab283ccc {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+.mode-card.data-v-ab283ccc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 32rpx;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16rpx;
+  border: 2rpx solid var(--border);
+  transition: all 0.3s ease;
+}
+.mode-card.data-v-ab283ccc:active {
+  transform: scale(0.98);
+  border-color: var(--primary);
+}
+.mode-title.data-v-ab283ccc {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 16rpx;
+}
+.mode-desc.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+/* 章节选择弹窗 */
+.chapter-select-content.data-v-ab283ccc {
+  background: white;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.chapter-list.data-v-ab283ccc {
+  flex: 1;
+  margin-top: 24rpx;
+  max-height: 600rpx;
+}
+.chapter-item.data-v-ab283ccc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 24rpx;
+  background: #f5f7fa;
+  border-radius: 16rpx;
+  margin-bottom: 16rpx;
+  transition: all 0.3s ease;
+}
+.chapter-item.data-v-ab283ccc:active {
+  transform: scale(0.98);
+  background: #e3f2fd;
+}
+.chapter-info.data-v-ab283ccc {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.chapter-name.data-v-ab283ccc {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+.chapter-count.data-v-ab283ccc {
+  font-size: 24rpx;
+  color: #999;
+}
+.chapter-progress.data-v-ab283ccc {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.progress-percent.data-v-ab283ccc {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: 600;
+}
