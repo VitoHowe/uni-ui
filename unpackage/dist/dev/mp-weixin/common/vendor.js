@@ -7120,7 +7120,7 @@ function isConsoleWritable() {
 function initRuntimeSocketService() {
   const hosts = "192.168.31.31,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_n429VE";
+  const id = "mp-weixin_nJM-7r";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8675,6 +8675,11 @@ const onHide = /* @__PURE__ */ createLifeCycleHook(
 );
 const onLoad = /* @__PURE__ */ createLifeCycleHook(
   ON_LOAD,
+  2
+  /* HookFlags.PAGE */
+);
+const onPullDownRefresh = /* @__PURE__ */ createLifeCycleHook(
+  ON_PULL_DOWN_REFRESH,
   2
   /* HookFlags.PAGE */
 );
@@ -28453,6 +28458,21 @@ const subPackages = [
         }
       },
       {
+        path: "pages/essay-list/essay-list",
+        style: {
+          navigationBarTitleText: "论文列表",
+          backgroundColor: "#f8fafc"
+        }
+      },
+      {
+        path: "pages/essay-detail/essay-detail",
+        style: {
+          navigationBarTitleText: "论文详情",
+          enablePullDownRefresh: true,
+          backgroundColor: "#f8fafc"
+        }
+      },
+      {
         path: "pages/wrong-set/wrong-set",
         style: {
           navigationBarTitleText: "错题集"
@@ -31388,6 +31408,7 @@ exports.o = o$1;
 exports.onHide = onHide;
 exports.onLoad = onLoad;
 exports.onMounted = onMounted;
+exports.onPullDownRefresh = onPullDownRefresh;
 exports.onShow = onShow;
 exports.onUnmounted = onUnmounted;
 exports.p = p$1;

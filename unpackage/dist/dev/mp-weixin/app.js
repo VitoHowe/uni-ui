@@ -11,6 +11,8 @@ if (!Math) {
   "./pages/profile/profile.js";
   "./pages/login/login.js";
   "./pkg-exam/pages/question/question.js";
+  "./pkg-exam/pages/essay-list/essay-list.js";
+  "./pkg-exam/pages/essay-detail/essay-detail.js";
   "./pkg-exam/pages/wrong-set/wrong-set.js";
   "./pkg-exam/pages/exam-list/exam-list.js";
   "./pkg-exam/pages/real-exam-list/real-exam-list.js";

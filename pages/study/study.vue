@@ -47,6 +47,27 @@
       </uni-section>
     </view>
 
+    <view class="essay-entry">
+      <uni-section title="论文学习" type="line" padding>
+        <view class="essay-entry-card" @click="goToEssayList">
+          <view class="essay-entry-left">
+            <view class="essay-badge">NEW</view>
+            <text class="essay-title">论文学习中心</text>
+            <text class="essay-desc">按机构筛选当前科目论文，并按章节自动分组阅读。</text>
+            <view class="essay-tags">
+              <view class="essay-tag">机构</view>
+              <view class="essay-tag">章节</view>
+              <view class="essay-tag">论文</view>
+            </view>
+          </view>
+          <view class="essay-entry-btn">
+            <text>立即进入</text>
+            <uni-icons type="arrowright" size="18" color="#ffffff" />
+          </view>
+        </view>
+      </uni-section>
+    </view>
+
     <view class="recent-study">
       <uni-section title="最近学习" type="line" padding>
         <uni-list>
@@ -114,6 +135,12 @@ const enterModule = (module) => {
 const goToWordPractice = () => {
   uni.navigateTo({
     url: '/pages/word-practice/word-practice'
+  })
+}
+
+const goToEssayList = () => {
+  uni.navigateTo({
+    url: '/pkg-exam/pages/essay-list/essay-list'
   })
 }
 
@@ -222,6 +249,80 @@ const onTabChange = (index) => {
 
 .word-entry {
   margin: 20rpx;
+}
+
+.essay-entry {
+  margin: 20rpx;
+}
+
+.essay-entry-card {
+  border-radius: 22rpx;
+  position: relative;
+  overflow: hidden;
+  padding: 30rpx 24rpx;
+  min-height: 156rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  background: linear-gradient(140deg, #0f766e 0%, #0ea5a0 58%, #2dd4bf 100%);
+  color: #f8fafc;
+  box-shadow: 0 10rpx 24rpx rgba(15, 118, 110, 0.28);
+}
+
+.essay-entry-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+}
+
+.essay-badge {
+  align-self: flex-start;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #0f172a;
+  background: #facc15;
+}
+
+.essay-title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.essay-desc {
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.essay-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 8rpx;
+}
+
+.essay-tag {
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  color: #e2f7f5;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.essay-entry-btn {
+  padding: 16rpx 20rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.26);
 }
 
 .word-entry-card {

@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const stores_auth = require("../../stores/auth.js");
+require("../../utils/constants.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");
   const _easycom_uni_section2 = common_vendor.resolveComponent("uni-section");

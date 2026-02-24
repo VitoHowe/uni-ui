@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "单词练习",
+  "navigationBarBackgroundColor": "#f5f7fb",
+  "backgroundColor": "#f5f7fb",
+  "usingComponents": {
+    "uni-icons": "../../uni_modules/uni-icons/components/uni-icons/uni-icons",
+    "word-book-selector": "../../components/word-practice/WordBookSelector"
+  }
+}

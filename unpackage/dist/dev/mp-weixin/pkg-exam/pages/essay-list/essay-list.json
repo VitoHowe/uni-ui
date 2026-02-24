@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "论文列表",
+  "backgroundColor": "#f8fafc",
+  "usingComponents": {
+    "uni-icons": "../../../uni_modules/uni-icons/components/uni-icons/uni-icons"
+  }
+}

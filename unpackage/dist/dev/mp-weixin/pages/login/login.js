@@ -2,6 +2,7 @@
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
 const stores_auth = require("../../stores/auth.js");
+require("../../utils/constants.js");
 const utils_navigationGuard = require("../../utils/navigationGuard.js");
 if (!Array) {
   const _easycom_uni_icons2 = common_vendor.resolveComponent("uni-icons");

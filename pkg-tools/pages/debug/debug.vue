@@ -89,6 +89,8 @@
       <uni-section title="调试信息" type="line" padding>
         <view class="info-content">
           <text class="info-text">API基础URL: {{ apiBaseUrl }}</text>
+          <text class="info-text">URL来源: {{ apiBaseSource }}</text>
+          <text class="info-text">运行环境: {{ apiEnv }}</text>
           <text class="info-text">当前页面: {{ currentPagePath }}</text>
           <text class="info-text">系统版本: {{ systemInfo.platform }}</text>
           <text class="info-text">小程序版本: {{ systemInfo.version }}</text>
@@ -141,6 +143,8 @@ const systemInfo = reactive({
 
 // 计算属性
 const apiBaseUrl = computed(() => API_CONFIG.BASE_URL)
+const apiBaseSource = computed(() => API_CONFIG.BASE_URL_SOURCE)
+const apiEnv = computed(() => API_CONFIG.ENV)
 const currentPagePath = computed(() => {
   const pages = getCurrentPages()
   return pages.length > 0 ? `/${pages[pages.length - 1].route}` : '未知'

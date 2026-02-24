@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "词书练习",
+  "navigationBarBackgroundColor": "#f4f0ff",
+  "backgroundColor": "#f6f7fb",
+  "usingComponents": {
+    "uni-icons": "../../uni_modules/uni-icons/components/uni-icons/uni-icons",
+    "word-practice-header": "../../components/word-practice/WordPracticeHeader",
+    "word-practice-panel": "../../components/word-practice/WordPracticePanel",
+    "word-list-table": "../../components/word-practice/WordListTable",
+    "word-book-selector": "../../components/word-practice/WordBookSelector"
+  }
+}

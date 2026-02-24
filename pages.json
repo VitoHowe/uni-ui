@@ -53,6 +53,21 @@
 					}
 				},
 				{
+					"path": "pages/essay-list/essay-list",
+					"style": {
+						"navigationBarTitleText": "论文列表",
+						"backgroundColor": "#f8fafc"
+					}
+				},
+				{
+					"path": "pages/essay-detail/essay-detail",
+					"style": {
+						"navigationBarTitleText": "论文详情",
+						"enablePullDownRefresh": true,
+						"backgroundColor": "#f8fafc"
+					}
+				},
+				{
 					"path": "pages/wrong-set/wrong-set",
 					"style": {
 						"navigationBarTitleText": "错题集"

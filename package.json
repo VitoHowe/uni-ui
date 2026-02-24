@@ -14,7 +14,19 @@
         "title": "微信小程序（含 debug 页）",
         "env": {
           "UNI_PLATFORM": "mp-weixin",
-          "WITH_DEBUG_PAGE": "true"
+          "WITH_DEBUG_PAGE": "true",
+          "UNI_API_BASE_URL": "http://127.0.0.1:3001/api"
+        },
+        "define": {
+          "WITH_DEBUG_PAGE": true
+        }
+      },
+      "mp-weixin-online-debug": {
+        "title": "微信小程序（线上接口调试）",
+        "env": {
+          "UNI_PLATFORM": "mp-weixin",
+          "WITH_DEBUG_PAGE": "true",
+          "UNI_API_BASE_URL": "https://wxnode.mayday.qzz.io/api"
         },
         "define": {
           "WITH_DEBUG_PAGE": true

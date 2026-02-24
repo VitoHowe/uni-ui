@@ -55,6 +55,11 @@ const _sfc_main = {
         url: "/pages/word-practice/word-practice"
       });
     };
+    const goToEssayList = () => {
+      common_vendor.index.navigateTo({
+        url: "/pkg-exam/pages/essay-list/essay-list"
+      });
+    };
     const continueStudy = (item) => {
       common_vendor.index.showToast({
         title: `继续学习 ${item.title}`,
@@ -62,7 +67,7 @@ const _sfc_main = {
       });
     };
     const onTabChange = (index) => {
-      common_vendor.index.__f__("log", "at pages/study/study.vue:128", "切换到tab:", index);
+      common_vendor.index.__f__("log", "at pages/study/study.vue:155", "切换到tab:", index);
     };
     return (_ctx, _cache) => {
       return {
@@ -108,12 +113,23 @@ const _sfc_main = {
           type: "line",
           padding: true
         }),
-        g: common_vendor.f(recentStudy, (item, index, i0) => {
+        g: common_vendor.p({
+          type: "arrowright",
+          size: "18",
+          color: "#ffffff"
+        }),
+        h: common_vendor.o(goToEssayList),
+        i: common_vendor.p({
+          title: "论文学习",
+          type: "line",
+          padding: true
+        }),
+        j: common_vendor.f(recentStudy, (item, index, i0) => {
           return {
-            a: "3f273c1e-9-" + i0 + "," + ("3f273c1e-8-" + i0),
+            a: "3f273c1e-11-" + i0 + "," + ("3f273c1e-10-" + i0),
             b: index,
             c: common_vendor.o(($event) => continueStudy(item), index),
-            d: "3f273c1e-8-" + i0 + ",3f273c1e-7",
+            d: "3f273c1e-10-" + i0 + ",3f273c1e-9",
             e: common_vendor.p({
               title: item.title,
               note: item.description,
@@ -122,18 +138,18 @@ const _sfc_main = {
             })
           };
         }),
-        h: common_vendor.p({
+        k: common_vendor.p({
           type: "book",
           size: "20",
           color: "#007AFF"
         }),
-        i: common_vendor.p({
+        l: common_vendor.p({
           title: "最近学习",
           type: "line",
           padding: true
         }),
-        j: common_vendor.o(onTabChange),
-        k: common_vendor.p({
+        m: common_vendor.o(onTabChange),
+        n: common_vendor.p({
           current: 1
         })
       };
