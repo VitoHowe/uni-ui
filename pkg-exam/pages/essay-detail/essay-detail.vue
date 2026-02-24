@@ -50,6 +50,7 @@ import { ref } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { get } from '@/utils/request.js'
 import { API_CONFIG, API_ENDPOINTS } from '@/utils/constants.js'
+import { TokenManager } from '@/utils/auth.js'
 import { parseEssayMarkdown, extractEssayImageUrls } from '@/pkg-exam/utils/essayParser.js'
 
 const essayId = ref(0)
@@ -98,10 +99,13 @@ const resolveAssetUrl = (url) => {
 }
 
 const requestMarkdown = (url) => {
+  const accessToken = TokenManager.getAccessToken()
+  const header = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
   return new Promise((resolve, reject) => {
     uni.request({
       url,
       method: 'GET',
+      header,
       responseType: 'text',
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {

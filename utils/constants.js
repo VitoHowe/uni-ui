@@ -15,6 +15,14 @@ const getProcessEnv = () => {
   return process.env
 }
 
+// 直接读取编译期常量，避免运行时访问 import.meta 触发兼容层异常。
+const IMPORT_META_MODE = import.meta.env.MODE || ''
+const IMPORT_META_DEV = !!import.meta.env.DEV
+const IMPORT_META_PROD = !!import.meta.env.PROD
+const IMPORT_META_UNI_API_BASE_URL = import.meta.env.UNI_API_BASE_URL || ''
+const IMPORT_META_VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const IMPORT_META_API_BASE_URL = import.meta.env.API_BASE_URL || ''
+
 const parseJsonEnv = (value) => {
   if (!value) return {}
   if (typeof value === 'object') return value
@@ -47,10 +55,40 @@ const normalizeBaseUrl = (url = '') => {
   return url.replace(/\/+$/, '')
 }
 
+const getMiniProgramEnvVersion = () => {
+  if (typeof wx === 'undefined' || typeof wx.getAccountInfoSync !== 'function') {
+    return ''
+  }
+  try {
+    const info = wx.getAccountInfoSync()
+    return info?.miniProgram?.envVersion || ''
+  } catch (error) {
+    return ''
+  }
+}
+
 const resolveEnvironment = () => {
-  // uni-app 编译时通常会注入 __DEV__，优先使用该值判断当前构建环境。
-  if (typeof __DEV__ !== 'undefined') {
-    return __DEV__ ? 'development' : 'production'
+  if (IMPORT_META_DEV) {
+    return 'development'
+  }
+  if (IMPORT_META_PROD) {
+    return 'production'
+  }
+
+  // __DEV__ 在不同端表现并不总是可靠，这里仅在 true 时直接判定开发环境。
+  if (typeof __DEV__ !== 'undefined' && __DEV__ === true) {
+    return 'development'
+  }
+
+  // 微信小程序优先使用 envVersion 判定运行环境：
+  // develop -> 开发环境（本地联调）
+  // trial/release -> 生产环境
+  const miniEnvVersion = getMiniProgramEnvVersion()
+  if (miniEnvVersion === 'develop') {
+    return 'development'
+  }
+  if (miniEnvVersion === 'trial' || miniEnvVersion === 'release') {
+    return 'production'
   }
 
   const env = getProcessEnv()
@@ -58,10 +96,10 @@ const resolveEnvironment = () => {
   if (nodeEnv === 'production') return 'production'
   if (nodeEnv === 'development') return 'development'
 
-  // 微信小程序运行环境下，若未能读取构建变量，默认按 production 处理。
+  // 微信小程序运行环境下，若未能读取构建变量，默认按 development 处理。
   // 本地联调可通过 UNI_API_BASE_URL 显式覆盖为本地地址。
   if (typeof wx !== 'undefined') {
-    return 'production'
+    return 'development'
   }
 
   return 'development'
@@ -71,6 +109,9 @@ const resolveEnvBaseUrl = () => {
   const env = getProcessEnv()
   const scriptEnv = getUniScriptEnv()
   const envValue =
+    IMPORT_META_UNI_API_BASE_URL ||
+    IMPORT_META_VITE_API_BASE_URL ||
+    IMPORT_META_API_BASE_URL ||
     env.UNI_API_BASE_URL ||
     env.VITE_API_BASE_URL ||
     env.API_BASE_URL ||
@@ -87,9 +128,15 @@ const fallbackEnv = currentEnv
 const fallbackBaseUrl = normalizeBaseUrl(ENV_CONFIG[fallbackEnv].BASE_URL)
 const resolvedBaseUrl = envBaseUrl || fallbackBaseUrl
 const resolvedSource = envBaseUrl ? 'env' : `default:${fallbackEnv}`
+const miniEnvVersion = getMiniProgramEnvVersion()
+const importMetaMode = IMPORT_META_MODE
 
 if (!envBaseUrl) {
-  console.log(`[API_CONFIG] 未配置 UNI_API_BASE_URL，使用 ${fallbackEnv} 默认地址: ${resolvedBaseUrl}`)
+  console.log(
+    `[API_CONFIG] 未配置 UNI_API_BASE_URL，使用 ${fallbackEnv} 默认地址: ${resolvedBaseUrl}` +
+      (miniEnvVersion ? `（miniProgram.envVersion=${miniEnvVersion}）` : '') +
+      `（import.meta.env.MODE=${importMetaMode || 'unknown'}）`
+  )
 }
 
 if (currentEnv === 'production' && !envBaseUrl) {
